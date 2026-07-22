@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Group - {{ group.name }}{% endblock %}
+{% block breadcrumb %}Groups / {{ group.name }}{% endblock %}
+{% block page_title %}BLENDY : Group - {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="group-saved-page">
+
+    {% if created %}
+    <div class="alert-success-banner" id="successBanner">
+        <span>Group created successfully.</span>
+        <button class="alert-close" aria-label="Dismiss" onclick="document.getElementById('successBanner').remove()">&#x2715;</button>
+    </div>
+    {% endif %}
+
+    <div class="page-actions">
+        <a href="{% url 'group_members' group.pk %}" class="secondary-btn">Select members</a>
+        <a href="{% url 'group_detail' %}?pk={{ group.pk }}" class="primary-action-btn">Edit group</a>
+    </div>
+
+    <div class="content-card group-info-card">
+        <div class="section-head">Permissions</div>
+        <div class="group-perms-row">
+            <span>Can read: <strong>Yes</strong></span>
+            <span>Can write: <strong>No</strong></span>
+        </div>
+    </div>
+
+    <div class="content-card group-members-card">
+        <div class="section-head">Members</div>
+        <table class="groups-table">
+            <thead>
+                <tr>
+                    <th>First name</th>
+                    <th>Last name</th>
+                    <th>Work phone</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if members %}
+                    {% for member in members %}
+                    <tr>
+                        <td>{{ member.auth_user.first_name|default:"" }}</td>
+                        <td>{{ member.auth_user.last_name|default:"" }}</td>
+                        <td>{{ member.phone|default:"" }}</td>
+                        <td>{{ member.email|default:"" }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="empty-table-message">No members assigned</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

@@ -57,7 +57,7 @@
             </a>
 
             <a href="{% url 'groups' %}"
-               class="nav-item{% if request.resolver_match.url_name == 'groups' %} active{% endif %}">
+               class="nav-item{% if request.resolver_match.url_name == 'groups' or request.resolver_match.url_name == 'group_detail' or request.resolver_match.url_name == 'group_saved' or request.resolver_match.url_name == 'group_members' %} active{% endif %}">
                 <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
                 <span class="nav-label">Groups</span>
             </a>

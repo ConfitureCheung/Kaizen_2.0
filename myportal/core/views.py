@@ -1,7 +1,10 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from .models import Client, Building, ClientGroup, BuildingUser
 
+
+PAGE_LIST = ["Dashboard", "Users", "Groups", "Buildings", "Clients", "Profile"]
 
 def get_allowed_client_ids(user):
     if user.is_superuser or user.is_staff or user.is_provider:
@@ -37,6 +40,77 @@ def groups_view(request):
     client_ids = get_allowed_client_ids(request.user)
     groups = ClientGroup.objects.filter(client_id__in=client_ids)
     return render(request, "core/groups.html", {"groups": groups})
+
+
+@login_required
+def group_detail_view(request):
+    pk = request.GET.get("pk") or request.POST.get("pk")
+    group = get_object_or_404(ClientGroup, pk=pk) if pk else None
+
+    # Resolve the client this user can write to
+    client_ids = get_allowed_client_ids(request.user)
+    client = Client.objects.filter(id__in=client_ids).first()
+
+    # Guard: no client exists yet — show a friendly warning instead of crashing
+    if client is None:
+        return render(request, "core/group_detail.html", {
+            "group": group,
+            "page_list": PAGE_LIST,
+            "no_client_error": True,
+        })
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        if not name:
+            return render(request, "core/group_detail.html", {
+                "group": group,
+                "page_list": PAGE_LIST,
+                "name_error": True,
+            })
+
+        if not group:
+            group = ClientGroup.objects.create(client=client, name=name)
+            return redirect(reverse("group_saved", args=[group.pk]) + "?created=1")
+        else:
+            group.name = name
+            group.save()
+            return redirect("group_saved", pk=group.pk)
+
+    return render(request, "core/group_detail.html", {
+        "group": group,
+        "page_list": PAGE_LIST,
+    })
+
+
+@login_required
+def group_saved_view(request, pk):
+    group = get_object_or_404(ClientGroup, pk=pk)
+    members = group.users.select_related("auth_user").all()
+    created = request.GET.get("created")
+    return render(request, "core/group_saved.html", {
+        "group": group,
+        "members": members,
+        "created": created,
+    })
+
+
+@login_required
+def group_members_view(request, pk):
+    group = get_object_or_404(ClientGroup, pk=pk)
+    client_ids = get_allowed_client_ids(request.user)
+    all_users = BuildingUser.objects.filter(client_id__in=client_ids)
+    current_members = group.users.all()
+
+    if request.method == "POST":
+        selected_ids = request.POST.getlist("members")
+        group.users.set(BuildingUser.objects.filter(pk__in=selected_ids))
+        return redirect("group_saved", pk=group.pk)
+
+    return render(request, "core/group_members.html", {
+        "group": group,
+        "all_users": all_users,
+        "current_members": current_members,
+    })
 
 
 ''' Sample Building is required to show building_report.html '''

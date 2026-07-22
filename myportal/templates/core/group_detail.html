@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{% if group %}Edit Group{% else %}Add Group{% endif %}{% endblock %}
+{% block breadcrumb %}Groups / {% if group %}{{ group.name }}{% else %}Add{% endif %}{% endblock %}
+{% block page_title %}BLENDY : {% if group %}Edit Group{% else %}Add Group{% endif %}{% endblock %}
+
+{% block content %}
+<div class="group-detail-page">
+    {% if no_client_error %}
+    <div class="alert-warn-banner">
+        <span>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            No client found. Please
+            <a href="{% url 'client_detail' %}">create a client</a>
+            before adding a group.
+        </span>
+    </div>
+    {% endif %}
+
+    {% if name_error %}
+    <div class="alert-warn-banner">
+        <span>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Group name cannot be empty.
+        </span>
+    </div>
+    {% endif %}
+
+    <form class="group-form" method="post" action="">
+        {% csrf_token %}
+
+        <div class="content-card group-form-card">
+            <div class="section-head">Basic Info</div>
+            <div class="group-form-body">
+                <div class="form-field">
+                    <label for="group_name">Name</label>
+                    <input type="text" id="group_name" name="name" value="{{ group.name|default:'' }}">
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card group-form-card">
+            <div class="section-head">Apply to all pages</div>
+            <div class="group-form-body group-global-perms">
+                <label class="check-row">
+                    <input type="checkbox" name="can_read_all" id="can_read_all" {% if not group or group.can_read %}checked{% endif %}>
+                    Can read
+                </label>
+                <label class="check-row">
+                    <input type="checkbox" name="can_write_all" id="can_write_all">
+                    Can write
+                </label>
+            </div>
+        </div>
+
+        <div class="content-card group-form-card">
+            <div class="section-head">Specific Page Settings</div>
+            <div class="group-form-body">
+                <table class="group-perms-table">
+                    <thead>
+                        <tr>
+                            <th>Page</th>
+                            <th>Can read</th>
+                            <th>Can write</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for page_name in page_list %}
+                        <tr>
+                            <td>{{ page_name }}</td>
+                            <td>
+                                <input type="checkbox" name="read_{{ page_name|lower }}" checked>
+                            </td>
+                            <td>
+                                <input type="checkbox" name="write_{{ page_name|lower }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary-btn with-icon">
+                <i class="fa-regular fa-floppy-disk"></i>
+                <span>Save</span>
+            </button>
+            <a href="{% url 'groups' %}" class="secondary-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Groups{% endblock %}
+{% block breadcrumb %}Groups{% endblock %}
+{% block page_title %}BLENDY : Groups{% endblock %}
+
+{% block content %}
+<div class="groups-page">
+    <div class="page-actions">
+        <a href="{% url 'group_detail' %}" class="primary-action-btn">Add group</a>
+    </div>
+
+    <div class="content-card groups-table-card">
+        <table class="groups-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>User count</th>
+                    <th class="action-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if groups %}
+                    {% for group in groups %}
+                    <tr>
+                        <td>{{ group.name }}</td>
+                        <td>{{ group.users.count }}</td>
+                        <td class="table-actions">
+                            <a href="{% url 'group_saved' group.pk %}" class="icon-btn icon-btn-neutral" aria-label="View group">
+                                <i class="fa-regular fa-eye"></i>
+                            </a>
+                            <a href="{% url 'group_detail' %}?pk={{ group.pk }}" class="icon-btn icon-btn-neutral" aria-label="Edit group">
+                                <i class="fa-solid fa-pencil"></i>
+                            </a>
+                            <button type="button" class="icon-btn icon-btn-danger" aria-label="Delete group">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="empty-table-message">No data to display</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

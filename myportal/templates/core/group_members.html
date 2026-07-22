@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Select Members - {{ group.name }}{% endblock %}
+{% block breadcrumb %}Groups / {{ group.name }} / Members{% endblock %}
+{% block page_title %}BLENDY : Select Members{% endblock %}
+
+{% block content %}
+<div class="group-members-page">
+    <form method="post" action="">
+        {% csrf_token %}
+
+        <div class="content-card group-members-card">
+            <div class="section-head">Assign users to {{ group.name }}</div>
+            <table class="groups-table">
+                <thead>
+                    <tr>
+                        <th class="check-col"></th>
+                        <th>First name</th>
+                        <th>Last name</th>
+                        <th>Work phone</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if all_users %}
+                        {% for user in all_users %}
+                        <tr>
+                            <td class="check-col">
+                                <input type="checkbox"
+                                       name="members"
+                                       value="{{ user.pk }}"
+                                       {% if user in current_members %}checked{% endif %}>
+                            </td>
+                            <td>{{ user.auth_user.first_name|default:"" }}</td>
+                            <td>{{ user.auth_user.last_name|default:"" }}</td>
+                            <td>{{ user.phone|default:"" }}</td>
+                            <td>{{ user.email|default:"" }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="empty-table-message">No users found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary-action-btn">Save members</button>
+            <a href="{% url 'group_saved' group.pk %}" class="secondary-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

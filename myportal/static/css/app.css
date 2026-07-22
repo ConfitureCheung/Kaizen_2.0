@@ -1391,6 +1391,150 @@ User Related Pages
 }
 
 /* =========================
+   Groups pages
+   ========================= */
+.groups-page {
+    display: grid;
+    gap: 14px;
+}
+
+.groups-table-card {
+    padding: 10px 14px 18px;
+}
+
+.groups-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.groups-table th,
+.groups-table td {
+    padding: 14px 8px;
+    font-size: 14px;
+    border-bottom: 1px solid #ececec;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.groups-table thead th {
+    font-weight: 700;
+    color: #1f1f1f;
+}
+
+.groups-table td {
+    color: #404651;
+}
+
+.groups-table .action-col {
+    width: 110px;
+}
+
+.groups-table .table-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Group detail / add form */
+.group-detail-page {
+    display: grid;
+    gap: 14px;
+}
+
+.group-form {
+    display: grid;
+    gap: 14px;
+}
+
+.group-form-card {
+    overflow: hidden;
+}
+
+.group-form-body {
+    padding: 14px 16px 18px;
+}
+
+.group-global-perms {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+}
+
+/* Per-page permissions table inside group detail */
+.group-perms-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.group-perms-table th,
+.group-perms-table td {
+    padding: 10px 8px;
+    font-size: 14px;
+    border-bottom: 1px solid #ececec;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.group-perms-table thead th {
+    font-weight: 700;
+    color: #1f1f1f;
+}
+
+.group-perms-table td:nth-child(2),
+.group-perms-table td:nth-child(3),
+.group-perms-table th:nth-child(2),
+.group-perms-table th:nth-child(3) {
+    width: 120px;
+}
+
+/* Group saved / detail view */
+.group-saved-page {
+    display: grid;
+    gap: 14px;
+}
+
+.group-info-card,
+.group-members-card {
+    overflow: hidden;
+}
+
+.group-perms-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #3c404a;
+    border-bottom: 1px solid #ececec;
+}
+
+/* Group members select page */
+.group-members-page {
+    display: grid;
+    gap: 14px;
+}
+
+.groups-table .check-col {
+    width: 40px;
+}
+
+.alert-warn-banner {
+    min-height: 46px;
+    background: #fef9e6;
+    color: #7a5a00;
+    border: 1px solid #f0d97a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 14px;
+    gap: 8px;
+}
+
+.alert-warn-banner a {
+    color: #5d7fc4;
+    text-decoration: underline;
+}
+
+/* =========================
 Responsive
 ========================= */
 @media (max-width: 1200px) {
