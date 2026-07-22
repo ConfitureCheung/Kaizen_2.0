@@ -16,3 +16,4 @@ urlpatterns = [
     path("clients/saved/", views.client_saved_view, name="client_saved"),
     path("profile/", views.profile_view, name="profile"),
 ]
+
