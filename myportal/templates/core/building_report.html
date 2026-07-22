@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Building Report{% endblock %}
+{% block breadcrumb %}Buildings / {{ building_name }}{% endblock %}
+{% block page_title %}BLENDY : Buildings - {{ building_name }}{% endblock %}
+
+{% block content %}
+<div class="building-report-layout">
+    <div class="report-left-column">
+        <section class="content-card report-building-card">
+            <div class="building-photo-placeholder">No building photo</div>
+            <h2 class="report-building-name">{{ building_name }}</h2>
+            <div class="report-building-country">{{ building_country }}</div>
+        </section>
+
+        <section class="content-card report-weather-card">
+            <div class="section-head">Weather</div>
+            <div class="weather-loading-text">Loading weather...</div>
+        </section>
+
+        <section class="content-card report-map-card">
+            <div class="section-head">Location Map</div>
+            <div class="report-map-placeholder"></div>
+        </section>
+    </div>
+
+    <div class="report-main-column">
+        <section class="content-card chart-card">
+            <div class="section-head">TXs Consumption Monthly Comparison</div>
+            <div class="chart-wrap chart-wrap-bar">
+                <canvas id="monthlyComparisonChart"></canvas>
+            </div>
+        </section>
+
+        <div class="report-middle-grid">
+            <section class="content-card chart-card">
+                <div class="section-head">Energy Breakdown Current Week</div>
+                <div class="chart-wrap chart-wrap-donut">
+                    <canvas id="energyBreakdownChart"></canvas>
+                </div>
+            </section>
+
+            <section class="content-card green-facts-card">
+                <div class="section-head">Green Facts</div>
+                <div class="green-facts-body">
+                    <div class="green-facts-icon">
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                    </div>
+                    <p>Regular filter changes can improve HVAC efficiency by up to 20% and extend system life.</p>
+                    <div class="green-facts-note">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>These facts and tips are intended for general information and may not apply to all buildings or regions.</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <section class="content-card insights-card">
+            <div class="section-head">Insights</div>
+            <div class="insights-body">{{ insight_count }} Total Insights, static sample.</div>
+        </section>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const monthlyLabels = {{ monthly_labels|safe }};
+    const lastYearRecent = {{ last_year_recent|safe }};
+    const baselineYearBefore = {{ baseline_year_before|safe }};
+    const donutLabels = {{ donut_labels|safe }};
+    const donutValues = {{ donut_values|safe }};
+
+    const monthlyCtx = document.getElementById('monthlyComparisonChart');
+    if (monthlyCtx) {
+        new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels,
+                datasets: [
+                    {
+                        label: 'Last Year - Recent',
+                        data: lastYearRecent,
+                        backgroundColor: '#5a96e3',
+                        borderColor: '#5a96e3',
+                        borderWidth: 1,
+                        barThickness: 14
+                    },
+                    {
+                        label: 'Baseline 1 Year before',
+                        data: baselineYearBefore,
+                        backgroundColor: '#7bb77d',
+                        borderColor: '#7bb77d',
+                        borderWidth: 1,
+                        barThickness: 14
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'center'
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#666'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 500,
+                        ticks: {
+                            stepSize: 100,
+                            color: '#666'
+                        },
+                        grid: {
+                            color: '#ebebeb'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const donutCtx = document.getElementById('energyBreakdownChart');
+    if (donutCtx) {
+        new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: donutLabels,
+                datasets: [{
+                    data: donutValues,
+                    backgroundColor: ['#2f5597', '#7ea6de'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '55%',
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'center'
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Add User{% endblock %}
+{% block breadcrumb %}Users{% endblock %}
+{% block page_title %}BLENDY : Add User{% endblock %}
+
+{% block content %}
+<form class="user-detail-form" action="#" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="user-form-grid">
+        <div class="form-field">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username">
+        </div>
+
+        <div class="form-field">
+            <label for="password">Password</label>
+            <input type="text" id="password" name="password">
+        </div>
+
+        <div class="form-field">
+            <label for="first_name">First name</label>
+            <input type="text" id="first_name" name="first_name">
+        </div>
+
+        <div class="form-field">
+            <label for="last_name">Last name</label>
+            <input type="text" id="last_name" name="last_name">
+        </div>
+
+        <div class="form-field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email">
+        </div>
+
+        <div class="form-field">
+            <label for="work_phone">Work phone</label>
+            <input type="text" id="work_phone" name="work_phone">
+        </div>
+
+        <div class="form-field">
+            <label for="cell_phone">Cell phone</label>
+            <input type="text" id="cell_phone" name="cell_phone">
+        </div>
+
+        <div class="form-field">
+            <label for="position">Position</label>
+            <input type="text" id="position" name="position">
+        </div>
+
+        <div class="form-field">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title">
+        </div>
+
+        <div class="form-field">
+            <label for="timezone">Timezone</label>
+            <select id="timezone" name="timezone">
+                <option>Hong Kong (UTC+8)</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="group">Group</label>
+            <select id="group" name="group">
+                <option>-----------</option>
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="photo">Photo</label>
+            <input type="file" id="photo" name="photo">
+        </div>
+    </div>
+
+    <div class="user-check-grid">
+        <label class="check-row">
+            <input type="checkbox" name="view_all">
+            <span>View all</span>
+        </label>
+
+        <label class="check-row">
+            <input type="checkbox" name="daily_summary" checked>
+            <span>Daily summary</span>
+        </label>
+
+        <label class="check-row">
+            <input type="checkbox" name="single_report">
+            <span>Single report per email</span>
+        </label>
+
+        <label class="check-row">
+            <input type="checkbox" name="receive_assigned">
+            <span>Receive assigned insights</span>
+        </label>
+    </div>
+
+    <div class="user-delivery-row">
+        <div class="form-field delivery-field">
+            <label for="daily_delivery">Daily insight delivery</label>
+            <select id="daily_delivery" name="daily_delivery">
+                <option>Morning 6am - 12pm</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-footer-actions">
+        <button type="button" class="save-btn">
+            <i class="fa-regular fa-floppy-disk"></i>
+            Save
+        </button>
+        <a href="{% url 'users' %}" class="cancel-btn">Cancel</a>
+    </div>
+</form>
+{% endblock %}

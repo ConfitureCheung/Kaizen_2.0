@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Django Project Flow Diagram</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --color-bg: #f7f6f2;
+      --color-surface: #f9f8f5;
+      --color-surface-2: #fbfbf9;
+      --color-surface-offset: #f3f0ec;
+      --color-border: #d4d1ca;
+      --color-divider: #dcd9d5;
+      --color-text: #28251d;
+      --color-text-muted: #6f6d66;
+      --color-text-faint: #a7a49d;
+      --color-primary: #01696f;
+      --color-primary-hover: #0c4e54;
+      --color-primary-highlight: #cedcd8;
+      --color-blue: #006494;
+      --color-gold: #b68400;
+      --color-success: #437a22;
+      --color-error: #a12c7b;
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --shadow-sm: 0 1px 2px rgba(40,37,29,0.06);
+      --shadow-md: 0 10px 30px rgba(40,37,29,0.08);
+      --shadow-lg: 0 30px 80px rgba(40,37,29,0.12);
+      --space-2: .5rem;
+      --space-3: .75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --space-12: 3rem;
+      --font-body: 'Instrument Sans', system-ui, sans-serif;
+      --font-display: 'Newsreader', Georgia, serif;
+    }
+
+    [data-theme="dark"] {
+      --color-bg: #171614;
+      --color-surface: #1c1b19;
+      --color-surface-2: #201f1d;
+      --color-surface-offset: #242321;
+      --color-border: #393836;
+      --color-divider: #2c2a28;
+      --color-text: #e3e0d8;
+      --color-text-muted: #a19d94;
+      --color-text-faint: #716d66;
+      --color-primary: #56a1aa;
+      --color-primary-hover: #7ab5bc;
+      --color-primary-highlight: rgba(86,161,170,0.16);
+      --color-blue: #71a7c9;
+      --color-gold: #ddb046;
+      --color-success: #82b866;
+      --color-error: #d272b1;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.28);
+      --shadow-md: 0 10px 30px rgba(0,0,0,0.3);
+      --shadow-lg: 0 30px 80px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at top left, rgba(1,105,111,0.10), transparent 28%),
+        radial-gradient(circle at 85% 10%, rgba(0,100,148,0.10), transparent 24%),
+        linear-gradient(180deg, var(--color-surface-2), var(--color-bg));
+      color: var(--color-text);
+      line-height: 1.55;
+    }
+
+    .page {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 64px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    .panel {
+      background: color-mix(in srgb, var(--color-surface) 90%, white 10%);
+      border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card {
+      padding: 32px;
+      min-height: 240px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--color-primary-highlight);
+      color: var(--color-primary);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.3rem, 4vw, 4.6rem);
+      line-height: 0.96;
+      margin: 18px 0 18px;
+      letter-spacing: -0.03em;
+      max-width: 12ch;
+    }
+
+    .hero p {
+      font-size: 1.03rem;
+      color: var(--color-text-muted);
+      max-width: 58ch;
+      margin: 0;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 24px;
+      align-content: start;
+    }
+
+    .legend-item {
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+      background: var(--color-surface-2);
+    }
+
+    .legend-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--color-text-faint);
+      margin: 0 0 14px;
+      font-weight: 700;
+    }
+
+    .flow-shell {
+      padding: 28px;
+    }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 220px 120px 220px 120px 220px;
+      gap: 16px 14px;
+      align-items: center;
+      justify-content: center;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .node {
+      position: relative;
+      min-height: 160px;
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-2) 86%, white 14%), var(--color-surface));
+      box-shadow: var(--shadow-sm);
+    }
+
+    .node::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 4px;
+      border-radius: 22px 22px 0 0;
+      background: var(--accent);
+    }
+
+    .node .tag {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 11%, transparent);
+      padding: 7px 10px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+
+    .node h3 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+    }
+
+    .node p {
+      margin: 0;
+      font-size: .95rem;
+      color: var(--color-text-muted);
+    }
+
+    .node ul {
+      margin: 12px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 7px;
+      font-size: .88rem;
+      color: var(--color-text-muted);
+    }
+
+    .node li::before {
+      content: "•";
+      color: var(--accent);
+      margin-right: 8px;
+    }
+
+    .browser { --accent: var(--color-primary); }
+    .router { --accent: var(--color-blue); }
+    .logic { --accent: var(--color-gold); }
+    .data { --accent: var(--color-success); }
+    .html { --accent: var(--color-error); }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      height: 20px;
+    }
+
+    .arrow::before {
+      content: "";
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--color-text) 12%, transparent), color-mix(in srgb, var(--color-text) 34%, transparent));
+      border-radius: 999px;
+    }
+
+    .arrow::after {
+      content: "";
+      position: absolute;
+      right: 2px;
+      width: 10px;
+      height: 10px;
+      border-top: 2px solid color-mix(in srgb, var(--color-text) 34%, transparent);
+      border-right: 2px solid color-mix(in srgb, var(--color-text) 34%, transparent);
+      transform: rotate(45deg);
+    }
+
+    .step-label {
+      position: absolute;
+      top: -16px;
+      font-size: 11px;
+      color: var(--color-text-faint);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+      background: var(--color-bg);
+      padding: 0 8px;
+    }
+
+    .folders {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .folder-card {
+      padding: 20px;
+      border-radius: var(--radius-lg);
+      background: color-mix(in srgb, var(--color-surface) 94%, white 6%);
+      border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .folder-card h4 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+    }
+
+    .folder-card code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .88rem;
+      color: var(--color-primary);
+      background: var(--color-primary-highlight);
+      padding: 3px 7px;
+      border-radius: 8px;
+    }
+
+    .folder-card p {
+      margin: 10px 0 0;
+      color: var(--color-text-muted);
+      font-size: .92rem;
+    }
+
+    .mini-grid {
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .map-card {
+      padding: 24px;
+    }
+
+    .mvc-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mvc-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .pill {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--color-surface-offset);
+      border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+      font-weight: 600;
+    }
+
+    .pill small {
+      display: block;
+      margin-top: 4px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .tree {
+      display: grid;
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .branch {
+      padding: 14px 16px;
+      border-left: 3px solid var(--color-primary);
+      background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+      border-radius: 0 14px 14px 0;
+    }
+
+    .branch strong { display:block; margin-bottom:4px; }
+    .branch span { color: var(--color-text-muted); font-size:.92rem; }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .toolbar p { margin: 0; color: var(--color-text-muted); }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
+      background: var(--color-surface);
+      color: var(--color-text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .footer-note {
+      margin-top: 22px;
+      padding: 16px 18px;
+      border-radius: var(--radius-md);
+      background: var(--color-surface-offset);
+      color: var(--color-text-muted);
+      font-size: .95rem;
+    }
+
+    @media (max-width: 1100px) {
+      .hero, .mini-grid { grid-template-columns: 1fr; }
+      .folders { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .page { width: min(100% - 20px, 1280px); padding-top: 16px; }
+      .hero-card, .flow-shell, .map-card { padding: 20px; }
+      .legend { grid-template-columns: 1fr; }
+      .folders { grid-template-columns: 1fr; }
+      .mvc-row { grid-template-columns: 1fr; }
+      h1 { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="toolbar">
+      <p>Django project anatomy for <strong>myportal</strong></p>
+      <button class="toggle" type="button" data-theme-toggle aria-label="Switch theme">
+        <span>Theme</span>
+        <span id="themeIcon">◐</span>
+      </button>
+    </div>
+
+    <section class="hero">
+      <article class="panel hero-card">
+        <span class="eyebrow">Visual flow diagram</span>
+        <h1>How your Django app works together.</h1>
+        <p>This graphic shows the path from browser request to rendered page, plus how your folders map to Django’s MVT pattern and tenant-aware project structure.</p>
+      </article>
+
+      <aside class="panel legend">
+        <div class="legend-item">
+          <strong>Browser</strong>
+          User opens a URL like <code>/buildings/</code>.
+        </div>
+        <div class="legend-item">
+          <strong>Routing</strong>
+          <code>config/urls.py</code> and app URLs choose the correct view.
+        </div>
+        <div class="legend-item">
+          <strong>Logic</strong>
+          <code>views.py</code> checks login and filters by client access.
+        </div>
+        <div class="legend-item">
+          <strong>Data + HTML</strong>
+          <code>models.py</code> fetches data, then templates render the response.
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel flow-shell">
+      <p class="section-title">Request lifecycle</p>
+      <div class="flow-grid" aria-label="Django request flow">
+        <div class="node browser">
+          <div class="tag">1. User</div>
+          <h3>Browser request</h3>
+          <p>A person clicks a menu item like Dashboard, Buildings, or Clients.</p>
+          <ul>
+            <li>GET /buildings/</li>
+            <li>Cookie/session sent</li>
+            <li>Needs response HTML</li>
+          </ul>
+        </div>
+        <div class="arrow"><span class="step-label">route</span></div>
+        <div class="node router">
+          <div class="tag">2. Router</div>
+          <h3>URL matching</h3>
+          <p><code>config/urls.py</code> forwards the request into <code>core/urls.py</code> or <code>accounts/urls.py</code>.</p>
+          <ul>
+            <li>Top-level URL entry</li>
+            <li>App-specific URL map</li>
+            <li>Chooses view function</li>
+          </ul>
+        </div>
+        <div class="arrow"><span class="step-label">dispatch</span></div>
+        <div class="node logic">
+          <div class="tag">3. View</div>
+          <h3>Business logic</h3>
+          <p><code>views.py</code> checks login, permission scope, and what data should be shown.</p>
+          <ul>
+            <li>login_required</li>
+            <li>allowed client IDs</li>
+            <li>prepare context</li>
+          </ul>
+        </div>
+
+        <div></div>
+        <div class="arrow"><span class="step-label">query</span></div>
+        <div class="node data">
+          <div class="tag">4. Model</div>
+          <h3>Database layer</h3>
+          <p><code>models.py</code> defines tables like Client, Building, Group, and User relationships.</p>
+          <ul>
+            <li>SQL via ORM</li>
+            <li>SQLite / PostgreSQL</li>
+            <li>Client isolation boundary</li>
+          </ul>
+        </div>
+        <div class="arrow"><span class="step-label">render</span></div>
+        <div class="node html">
+          <div class="tag">5. Template</div>
+          <h3>HTML response</h3>
+          <p><code>templates/*.html</code> extends <code>base.html</code> and sends final page markup back to the browser.</p>
+          <ul>
+            <li>Shared top bar</li>
+            <li>Sidebar + tab shell</li>
+            <li>Page-specific content</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="folders">
+        <div class="folder-card">
+          <h4><code>config/</code></h4>
+          <p>Project control room: settings, root URLs, deployment entry points.</p>
+        </div>
+        <div class="folder-card">
+          <h4><code>accounts/</code></h4>
+          <p>Authentication and identity: custom user, provider profile, login/logout.</p>
+        </div>
+        <div class="folder-card">
+          <h4><code>core/</code></h4>
+          <p>Business domain: clients, buildings, groups, memberships, portal logic.</p>
+        </div>
+        <div class="folder-card">
+          <h4><code>templates/</code></h4>
+          <p>Presentation layer: base layout and page HTML files.</p>
+        </div>
+        <div class="folder-card">
+          <h4><code>static/</code></h4>
+          <p>Frontend assets: CSS styling and JavaScript interactions like the hamburger menu.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mini-grid">
+      <article class="panel map-card">
+        <p class="section-title">MVC to Django</p>
+        <div class="mvc-grid">
+          <div class="mvc-row">
+            <div class="pill">Model<small>Classic MVC</small></div>
+            <div class="pill">→ models.py<small>Django MVT</small></div>
+            <div class="pill">Defines tables, relations, and ORM queries</div>
+          </div>
+          <div class="mvc-row">
+            <div class="pill">View<small>Classic MVC screen</small></div>
+            <div class="pill">→ templates/*.html<small>Django MVT</small></div>
+            <div class="pill">Renders HTML shown in the browser</div>
+          </div>
+          <div class="mvc-row">
+            <div class="pill">Controller<small>Classic MVC logic</small></div>
+            <div class="pill">→ urls.py + views.py<small>Django MVT</small></div>
+            <div class="pill">Routes requests and handles business logic</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel map-card">
+        <p class="section-title">Tenant access rule</p>
+        <div class="tree">
+          <div class="branch">
+            <strong>Provider / Superuser</strong>
+            <span>Can see and manage all clients, buildings, groups, and users.</span>
+          </div>
+          <div class="branch">
+            <strong>Client user</strong>
+            <span>Can only see rows linked to their own client membership.</span>
+          </div>
+          <div class="branch">
+            <strong>Core filter point</strong>
+            <span><code>views.py</code> limits querysets using allowed client IDs before rendering templates.</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <div class="footer-note">
+      Practical memory hook: <strong>URLs decide</strong>, <strong>views think</strong>, <strong>models store</strong>, <strong>templates show</strong>, and <strong>static files style/animate</strong>.
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const btn = document.querySelector('[data-theme-toggle]');
+      const icon = document.getElementById('themeIcon');
+      let mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      function applyTheme(value) {
+        root.setAttribute('data-theme', value);
+        icon.textContent = value === 'dark' ? '☀' : '◐';
+      }
+      applyTheme(mode);
+      btn.addEventListener('click', () => {
+        mode = mode === 'dark' ? 'light' : 'dark';
+        applyTheme(mode);
+      });
+    })();
+  </script>
+</body>
+</html>

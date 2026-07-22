@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Add Building{% endblock %}
+{% block breadcrumb %}Buildings / Add{% endblock %}
+{% block page_title %}BLENDY : Add Building{% endblock %}
+
+{% block content %}
+<form class="building-detail-form" action="#" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="building-form-layout">
+        <section class="content-card form-section building-main-section">
+            <div class="section-head">Building Information</div>
+
+            <div class="form-grid form-grid-3">
+                <div class="form-field">
+                    <label>Name</label>
+                    <input type="text" placeholder="Name">
+                </div>
+                <div class="form-field form-field-span-2">
+                    <label>Address</label>
+                    <input type="text" placeholder="Address">
+                </div>
+
+                <div class="form-field">
+                    <label>City</label>
+                    <input type="text" placeholder="City">
+                </div>
+                <div class="form-field">
+                    <label>Province / State</label>
+                    <input type="text" placeholder="Province/State">
+                </div>
+                <div class="form-field">
+                    <label>Postal code</label>
+                    <input type="text" placeholder="Postal Code">
+                </div>
+
+                <div class="form-field">
+                    <label>Country</label>
+                    <select>
+                        <option>Hong Kong</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Currency</label>
+                    <select>
+                        <option>HKD</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Timezone</label>
+                    <select>
+                        <option>Hong Kong (UTC+8)</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label>Type</label>
+                    <select>
+                        <option>Select One</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Gross floor area</label>
+                    <input type="text" value="0">
+                </div>
+                <div class="form-field">
+                    <label>Unit</label>
+                    <select>
+                        <option>ft²</option>
+                    </select>
+                </div>
+
+                <div class="form-field occupancy-group">
+                    <label>Occupancy</label>
+                    <div class="stepper-field">
+                        <button type="button">-</button>
+                        <input type="text" value="0">
+                        <button type="button">+</button>
+                    </div>
+                </div>
+                <div class="form-field form-field-span-2">
+                    <label>Dashboard chart</label>
+                    <input type="text" placeholder="Set dashboard chart">
+                </div>
+
+                <div class="form-field form-field-span-2">
+                    <label>Energy Star Property ID</label>
+                    <input type="text">
+                </div>
+                <div class="form-field">
+                    <label>Weather unit group</label>
+                    <select>
+                        <option>Metric</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label>Base temp cooling</label>
+                    <input type="text">
+                </div>
+                <div class="form-field">
+                    <label>Base temp heating</label>
+                    <input type="text">
+                </div>
+                <div class="form-field form-field-empty"></div>
+
+                <div class="form-field form-field-span-2">
+                    <label>Database connection</label>
+                    <select>
+                        <option>----------</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Photo</label>
+                    <input type="file">
+                </div>
+            </div>
+        </section>
+
+        <aside class="content-card form-section building-side-section">
+            <div class="section-head">Technical Contact</div>
+
+            <div class="form-grid form-grid-1">
+                <div class="form-field">
+                    <label>Name</label>
+                    <input type="text" placeholder="Technical Contact Name">
+                </div>
+                <div class="form-field">
+                    <label>Email</label>
+                    <input type="email" placeholder="Technical Contact Email">
+                </div>
+                <div class="form-field">
+                    <label>Phone</label>
+                    <input type="text" placeholder="Technical Contact Phone">
+                </div>
+                <div class="form-field">
+                    <label>Building Phone</label>
+                    <input type="text" placeholder="Phone Number">
+                </div>
+                <div class="form-field">
+                    <label>Building Fax</label>
+                    <input type="text" placeholder="Fax Number">
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <section class="content-card form-section weather-section">
+        <div class="section-head section-head-inline">
+            <span>Weather Location</span>
+            <button type="button" class="secondary-small-btn">Locate by address</button>
+        </div>
+        <div class="weather-map-placeholder"></div>
+    </section>
+
+    <div class="form-footer-actions">
+        <button type="submit" class="save-btn">
+            <i class="fa-regular fa-floppy-disk"></i>
+            Save
+        </button>
+        <a href="{% url 'buildings' %}" class="cancel-btn">Cancel</a>
+    </div>
+</form>
+{% endblock %}

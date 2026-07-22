@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Client Detail{% endblock %}
+{% block breadcrumb %}Clients{% endblock %}
+{% block page_title %}BLENDY : Client Detail{% endblock %}
+
+{% block content %}
+<div class="client-detail-page">
+    <form class="client-form" action="#" method="post">
+        <div class="client-form-grid client-form-grid-2">
+            <div class="form-field">
+                <label for="client_name">Name</label>
+                <input type="text" id="client_name" name="client_name" placeholder="Name">
+            </div>
+
+            <div class="form-field">
+                <label for="client_address">Address</label>
+                <input type="text" id="client_address" name="client_address" placeholder="Address">
+            </div>
+        </div>
+
+        <div class="client-form-grid client-form-grid-3">
+            <div class="form-field">
+                <label for="client_city">City</label>
+                <input type="text" id="client_city" name="client_city" placeholder="City">
+            </div>
+
+            <div class="form-field">
+                <label for="client_state">Province / State</label>
+                <input type="text" id="client_state" name="client_state" placeholder="Province/State">
+            </div>
+
+            <div class="form-field">
+                <label for="client_postal">Postal code</label>
+                <input type="text" id="client_postal" name="client_postal" placeholder="Postal Code">
+            </div>
+        </div>
+
+        <div class="client-form-grid client-form-grid-3">
+            <div class="form-field">
+                <label for="client_country">Country</label>
+                <select id="client_country" name="client_country">
+                    <option>Hong Kong</option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="client_partnership">Partnership</label>
+                <select id="client_partnership" name="client_partnership">
+                    <option>Skyforce</option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="client_phone">Phone number</label>
+                <input type="text" id="client_phone" name="client_phone" placeholder="Phone Number">
+            </div>
+        </div>
+
+        <div class="client-form-grid client-form-grid-3 form-last-row">
+            <div class="form-field">
+                <label for="client_fax">Fax number</label>
+                <input type="text" id="client_fax" name="client_fax" placeholder="Fax Number">
+            </div>
+
+            <div class="form-field form-field-span-2">
+                <label for="client_logo">Logo</label>
+                <div class="fake-file-upload">
+                    <button type="button" class="file-btn">Choose file</button>
+                    <div class="file-name">No file chosen</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'client_saved' %}" class="primary-btn with-icon">
+                <i class="fa-regular fa-floppy-disk"></i>
+                <span>Save</span>
+            </a>
+
+            <a href="{% url 'clients' %}" class="secondary-btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

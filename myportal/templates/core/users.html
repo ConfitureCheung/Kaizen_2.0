@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Users{% endblock %}
+{% block breadcrumb %}Users{% endblock %}
+{% block page_title %}BLENDY : Users{% endblock %}
+
+{% block content %}
+<div class="users-page">
+    <div class="page-actions">
+        <a href="{% url 'user_detail' %}" class="primary-action-btn">Add user</a>
+    </div>
+
+    <div class="content-card users-table-card">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>First name</th>
+                    <th>Last name</th>
+                    <th>Email</th>
+                    <th>Work phone</th>
+                    <th>Position</th>
+                    <th>Title</th>
+                    <th class="action-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if users %}
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.auth_user.first_name|default:"" }}</td>
+                        <td>{{ user.auth_user.last_name|default:"" }}</td>
+                        <td>{{ user.email|default:"" }}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="table-actions">
+                            <a href="{% url 'user_detail' %}" class="icon-btn icon-btn-neutral" aria-label="Edit user">
+                                <i class="fa-solid fa-pencil"></i>
+                            </a>
+                            <button type="button" class="icon-btn icon-btn-danger" aria-label="Delete user">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-table-message">No data to display</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

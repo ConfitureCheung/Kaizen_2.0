@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Clients{% endblock %}
+{% block breadcrumb %}Clients{% endblock %}
+{% block page_title %}BLENDY : Clients{% endblock %}
+
+{% block content %}
+<div class="clients-page">
+    <div class="page-actions">
+        <a href="{% url 'client_detail' %}" class="primary-btn">Add client</a>
+    </div>
+
+    <section class="list-card">
+        <table class="entity-table clients-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>City</th>
+                    <th>Country</th>
+                    <th class="actions-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4" class="table-empty">No data to display</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</div>
+{% endblock %}

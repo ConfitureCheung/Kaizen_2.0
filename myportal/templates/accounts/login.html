@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | BLENDY</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="login-page">
+    <header class="topbar login-topbar">
+        <div class="topbar-left">
+            <button class="menu-btn" type="button" aria-label="Menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="topbar-center">
+            <a href="{% url 'login' %}" class="brand">
+                <span class="brand-text">BLENDY Analytics</span>
+                <span class="brand-divider">|</span>
+                <span class="brand-badge">BLENDY</span>
+            </a>
+        </div>
+
+        <div class="topbar-right">
+            <span class="login-header-btn">Login</span>
+        </div>
+    </header>
+
+    <main class="login-main">
+        <div class="login-panel">
+            <h1 class="login-heading">Login</h1>
+
+            {% if error %}
+                <div class="login-error">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" class="login-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+
+                <div class="form-row">
+                    <label for="id_username">Username</label>
+                    <input type="text" id="id_username" name="username" required>
+                </div>
+
+                <div class="form-row">
+                    <label for="id_password">Password</label>
+                    <input type="password" id="id_password" name="password" required>
+                </div>
+
+                <button type="submit" class="sign-in-btn">Sign in</button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

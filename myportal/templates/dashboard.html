@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block page_title %}BLENDY : Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <section class="dashboard-card building-location-card">
+        <div class="card-head">Building Location</div>
+        <div class="card-body">
+            <div class="map-box"></div>
+        </div>
+    </section>
+
+    <div class="dashboard-right-column">
+        <section class="dashboard-info-panel">
+            <h2>Data Collection Device Status</h2>
+            <div class="info-box">No buildings or database connections configured yet.</div>
+        </section>
+
+        <section class="dashboard-info-panel">
+            <h2>Building Reports Count</h2>
+            <div class="info-box">No buildings</div>
+        </section>
+    </div>
+
+    <section class="reports-section">
+        <h2>Latest 5 Reports</h2>
+        <div class="reports-table-wrap">
+            <table class="reports-table">
+                <thead>
+                    <tr>
+                        <th>Report</th>
+                        <th>Building</th>
+                        <th>Date &amp; Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3" class="empty-row">No reports</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

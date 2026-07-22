@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BLENDY{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-left">
+            <button id="menuToggle" class="menu-btn" type="button" aria-label="Open menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="topbar-center">
+            <a href="{% url 'dashboard' %}" class="brand-link">
+                <span class="brand-title">BLENDY Analytics</span>
+                <span class="brand-divider">|</span>
+
+                <span class="brand-logo-box">
+                    <img src="{% static 'img/blendy_icon.png' %}" alt="BLENDY logo" class="brand-logo-img">
+                    <span class="brand-logo-fallback">BLENDY</span>
+                </span>
+            </a>
+        </div>
+
+        <div class="topbar-right">
+            <span class="topbar-user">{{ request.user.username }}</span>
+            <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <div class="breadcrumb-bar">
+        <span class="crumb-brand">BLENDY</span>
+        <span class="crumb-sep">/</span>
+        <span>{% block breadcrumb %}{% endblock %}</span>
+    </div>
+
+    <main class="page-shell">
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+
+        <nav class="icon-nav" aria-label="Primary navigation">
+            <a href="{% url 'dashboard' %}"
+               class="nav-item{% if request.path == '/' or request.path == '/dashboard/' or request.resolver_match.url_name == 'dashboard' %} active{% endif %}">
+                <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                <span class="nav-label">Dashboard</span>
+            </a>
+
+            <a href="{% url 'users' %}"
+               class="nav-item{% if request.resolver_match.url_name == 'users' or request.resolver_match.url_name == 'user_detail' %} active{% endif %}">
+                <span class="nav-icon"><i class="fa-solid fa-user"></i></span>
+                <span class="nav-label">Users</span>
+            </a>
+
+            <a href="{% url 'groups' %}"
+               class="nav-item{% if request.resolver_match.url_name == 'groups' %} active{% endif %}">
+                <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+                <span class="nav-label">Groups</span>
+            </a>
+
+            <a href="{% url 'buildings' %}"
+               class="nav-item{% if request.resolver_match.url_name == 'buildings' or request.resolver_match.url_name == 'building_detail' or request.resolver_match.url_name == 'building_report' %} active{% endif %}">
+                <span class="nav-icon"><i class="fa-solid fa-building"></i></span>
+                <span class="nav-label">Buildings</span>
+            </a>
+
+            <a href="{% url 'clients' %}"
+               class="nav-item{% if request.resolver_match.url_name == 'clients' or request.resolver_match.url_name == 'client_detail' or request.resolver_match.url_name == 'client_saved' %} active{% endif %}">
+                <span class="nav-icon"><i class="fa-solid fa-briefcase"></i></span>
+                <span class="nav-label">Clients</span>
+            </a>
+
+            <a href="{% url 'profile' %}"
+               class="nav-item{% if request.resolver_match.url_name == 'profile' %} active{% endif %}">
+                <span class="nav-icon"><i class="fa-solid fa-folder"></i></span>
+                <span class="nav-label">Profile</span>
+            </a>
+        </nav>
+
+        <section class="page-content">
+            {% block content %}{% endblock %}
+        </section>
+    </main>
+
+    <script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

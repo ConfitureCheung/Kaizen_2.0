@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Buildings{% endblock %}
+{% block breadcrumb %}Buildings{% endblock %}
+{% block page_title %}BLENDY : Buildings{% endblock %}
+
+{% block content %}
+<div class="buildings-page">
+    <div class="page-actions">
+        <a href="{% url 'building_detail' %}" class="primary-action-btn">Add building</a>
+    </div>
+
+    <div class="content-card buildings-table-card">
+        <table class="buildings-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>City</th>
+                    <th>Country</th>
+                    <th>Client</th>
+                    <th class="action-col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if sample_saved_buildings %}
+                    {% for building in sample_saved_buildings %}
+                    <tr>
+                        <td>{{ building.name }}</td>
+                        <td>{{ building.city }}</td>
+                        <td>{{ building.country }}</td>
+                        <td>{{ building.client }}</td>
+                        <td class="table-actions">
+                            <a href="{% url 'building_report' %}" class="icon-btn icon-btn-neutral" aria-label="View building report">
+                                <i class="fa-regular fa-eye"></i>
+                            </a>
+                            <a href="{% url 'building_detail' %}" class="icon-btn icon-btn-neutral" aria-label="Edit building">
+                                <i class="fa-solid fa-pencil"></i>
+                            </a>
+                            <button type="button" class="icon-btn icon-btn-danger" aria-label="Delete building">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-table-message">No data to display</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

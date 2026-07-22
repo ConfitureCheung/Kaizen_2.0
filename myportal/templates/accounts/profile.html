@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+{% block breadcrumb %}Profile{% endblock %}
+{% block page_title %}BLENDY : Profile{% endblock %}
+
+{% block content %}
+<div class="profile-layout">
+    <section class="profile-card avatar-card">
+        <div class="avatar-preview">
+            <div class="avatar-circle">No avatar</div>
+        </div>
+
+        <div class="avatar-upload-row">
+            <button type="button" class="file-btn">Choose file</button>
+            <div class="file-name">No file chosen</div>
+        </div>
+    </section>
+
+    <section class="profile-card profile-form-card">
+        <form class="profile-form" action="#" method="post">
+            <div class="profile-form-grid">
+                <div class="profile-field">
+                    <label for="display_name">Display name</label>
+                    <input type="text" id="display_name" name="display_name">
+                </div>
+
+                <div class="profile-field">
+                    <label for="company">Company</label>
+                    <input type="text" id="company" name="company">
+                </div>
+            </div>
+
+            <div class="profile-field profile-notes-field">
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes"></textarea>
+            </div>
+
+            <button type="submit" class="save-btn">
+                <i class="fa-regular fa-floppy-disk"></i>
+                <span>Save</span>
+            </button>
+        </form>
+    </section>
+</div>
+{% endblock %}
