@@ -12,6 +12,15 @@ def get_allowed_client_ids(user):
     return user.client_memberships.filter(is_active=True).values_list("client_id", flat=True)
 
 
+
+def get_sidebar_context(user):
+    client_ids = get_allowed_client_ids(user)
+    clients = Client.objects.filter(id__in=client_ids).prefetch_related("buildings")
+    return {
+        "sidebar_clients": clients,
+    }
+
+
 @login_required
 def dashboard_view(request):
     client_ids = get_allowed_client_ids(request.user)

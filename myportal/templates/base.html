@@ -9,6 +9,54 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 <body>
+    <aside id="leftPanel" class="left-panel" aria-hidden="true">
+        <div class="left-panel-head">
+            <div class="left-panel-title">Navigation</div>
+            <button id="leftPanelClose" class="left-panel-close" type="button" aria-label="Close panel">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="left-panel-body">
+            <div class="tree-root-label">Profile</div>
+
+            <div class="tree-section">
+                {% if sidebar_clients %}
+                    {% for client in sidebar_clients %}
+                    <div class="tree-client-block">
+                        <div class="tree-client-row">
+                            <i class="fa-solid fa-building-user tree-node-icon"></i>
+                            <span>{{ client.name }}</span>
+                        </div>
+
+                        <div class="tree-building-list">
+                            {% if client.buildings.all %}
+                                {% for building in client.buildings.all %}
+                                <div class="tree-building-row">
+                                    <i class="fa-regular fa-building tree-node-icon"></i>
+                                    <span>{{ building.name }}</span>
+                                </div>
+                                {% empty %}
+                                <div class="tree-empty-row">No buildings created</div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="tree-empty-row">No buildings created</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="tree-empty-state">
+                        <div class="tree-empty-row">No clients created</div>
+                        <div class="tree-empty-row">Buildings will appear here after creation</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+
+    <div id="leftPanelOverlay" class="left-panel-overlay" hidden></div>
+
     <header class="topbar">
         <div class="topbar-left">
             <button id="menuToggle" class="menu-btn" type="button" aria-label="Open menu">
