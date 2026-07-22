@@ -1,54 +1,50 @@
-# PROJECT_OVERVIEW
+# PROJECT OVERVIEW
 
-## Project summary
-BLENDY Analytics is a Python/Django/PostgreSQL web application with a custom `accounts` app and a `core` app for tenant-style operational pages including dashboard, users, groups, buildings, clients, and profile.[file:53]
-The current codebase is structured as a standard Django project named `myportal` with `config`, `accounts`, `core`, shared templates, and shared static assets in `static/css/app.css` and `static/js/app.js`.[file:53]
+## Current status
+The BLENDY Django project already has its main structure in place, including the `accounts` and `core` apps, shared templates, authentication flow, and page routes for dashboard, users, groups, buildings, clients, and profile.[cite:8][cite:17]
+The project remains layout-first: some pages are backed by real querysets while other pages still use sample or scaffold data, which is an intentional pattern in the current codebase.[cite:16][cite:20]
+The Groups module has moved beyond a placeholder route and should now be treated as a multi-screen flow under the existing shared layout conventions.[cite:11][cite:20]
 
-## Tech stack
-- Backend: Django with PostgreSQL configured through `psycopg2-binary` and environment variables loaded by `python-dotenv`.[file:53]
-- Database: PostgreSQL as the default Django database engine in `config/settings.py`.[file:53]
-- Frontend: Django templates, shared `base.html`, Font Awesome icons, custom CSS, and small vanilla JS helpers.[file:53]
-- Auth: Custom `accounts.User` model extending `AbstractUser`, with login/logout handled in the `accounts` app.[file:53]
+## Existing application structure
+- `templates/base.html` provides the authenticated shell, including the top bar, hamburger button, breadcrumb bar, page title area, and icon-based navigation.[cite:10]
+- `core/views.py` currently contains queryset-backed list pages for users, groups, and clients, plus sample-data-backed building screens.[cite:16]
+- `core/urls.py` defines named routes for users, groups, buildings, clients, and profile.[cite:17]
+- `static/css/app.css` contains the shared visual language for cards, forms, tables, banners, nav icons, buttons, and responsive adjustments.[cite:20]
+- The data model already supports the future sidebar hierarchy because `ClientGroup` belongs to `Client`, `Building` belongs to `Client`, and `BuildingUser` can be associated to both groups and buildings.[cite:15]
 
-## App structure
-### `accounts`
-- Owns the custom user model `User` with `is_provider` and `is_client_user` flags.[file:53]
-- Contains `ProviderProfile` for provider-side company details.[file:53]
-- Exposes login/logout routes in `accounts/urls.py` and custom login/logout views in `accounts/views.py`.[file:53]
+## Groups module status
+The Groups area should now be understood as a four-screen flow:
+1. Groups list page.
+2. Group add/edit page.
+3. Group saved/detail page.
+4. Group member-selection page.[cite:11]
 
-### `core`
-- Owns tenant/business models including `DatabaseConnection`, `Client`, `ClientMembership`, `ClientGroup`, `Building`, and `BuildingUser`.[file:53]
-- Contains the main authenticated pages and route handlers for dashboard, users, groups, buildings, clients, and profile.[file:53]
-- Uses `get_allowed_client_ids(user)` to scope visible data for non-provider/non-staff users.[file:53]
+These screens should keep the Groups icon highlighted in the shared icon navigation by extending the Groups active-state check in `base.html` to cover all Groups-related route names, not only `groups`.[cite:10]
+The Groups add page also needs a defensive UX path: when no accessible client exists, it should show a warning banner that tells the user to create a client first instead of triggering a server error from the required `client_id` field.[cite:15][cite:21]
 
-## Current pages
-Implemented or scaffolded templates currently include:
-- `dashboard.html`.[file:53]
-- `accounts/login.html` and `accounts/profile.html`.[file:53]
-- `core/users.html` and `core/user_detail.html`.[file:53]
-- `core/groups.html` scaffold reference exists in project tree and routes, but the Groups page is the next active UI task.[file:53]
-- `core/buildings.html`, `core/building_detail.html`, and `core/building_report.html`.[file:53]
-- `core/clients.html`, `core/client_detail.html`, and `core/client_saved.html`.[file:53]
+## Styling and UI approach
+- Continue using the existing BLENDY visual language already seen in Users, Clients, and Buildings pages, including `content-card`, `section-head`, `primary-action-btn`, `icon-btn`, `primary-btn`, and `secondary-btn` patterns.[cite:12][cite:13][cite:20]
+- Keep all Groups-related visual additions in `static/css/app.css` rather than introducing a new styling system.[cite:20]
+- Stay with the current pragmatic pattern: accurate layout first, behavior second, with only minimal backend wiring needed to support the screens.[cite:16][cite:20]
 
-## Navigation and layout rules
-- Shared navigation lives in `templates/base.html`.[file:53]
-- The top icon navigation includes Dashboard, Users, Groups, Buildings, Clients, and Profile, with active-state logic based on `request.resolver_match.url_name`.[file:53]
-- Users-related pages already use active-state handling for `users` and `user_detail`; Groups currently has active-state handling for `groups` only.[file:53]
-- Shared visual styling is centralized in `static/css/app.css`, so new HTML pages should reuse existing classes and naming patterns where possible.[file:53]
+## Next planned feature
+The next step is a sliding left panel opened by the hamburger button in the shared top bar.[cite:10]
+The panel is intended to show a structure tree with these tiers:
+- Top tier: Profile.
+- Second tier: Client.
+- Third tier: Buildings under each client.[cite:15]
 
-## Data and permission model
-- `ClientMembership` connects a Django auth user to a client with role choices `admin`, `editor`, and `viewer`.[file:53]
-- `ClientGroup` belongs to a `Client` and is unique per client/name pair.[file:53]
-- `BuildingUser` belongs to a `Client` and links to groups and buildings through many-to-many fields.[file:53]
-- Most list pages should respect `get_allowed_client_ids(user)` so the UI remains scoped to allowed clients.[file:53]
+Because the actual model relationship is `Client -> Building`, the tree should be implemented as navigation hierarchy rather than implying a database parent-child link from Profile to Client.[cite:15][cite:17]
 
-## Current implementation state
-- Dashboard, clients, buildings, and users pages are present as UI-first pages, with some views already connected to real queryset data and some still using static sample data.[file:53]
-- `users_view` already uses real queryset data from `BuildingUser.objects.filter(client_id__in=client_ids)`.[file:53]
-- `groups_view` already returns `ClientGroup` queryset data to `core/groups.html`, so the next step is mainly frontend page build-out for Groups-related HTML pages.[file:53]
-- Buildings pages mix scaffold UI with sample records and sample chart data, showing that the project is currently focused on layout-first implementation before full backend behavior.[file:53]
+## Files most relevant for the next step
+- `templates/base.html` for adding sidebar markup and preserving the shared shell.[cite:10]
+- `static/css/app.css` for slide-in panel styles, overlay behavior, nested tree styling, and responsive handling.[cite:20]
+- `static/js/app.js` for hamburger interaction and panel toggle behavior.[cite:18]
+- `core/views.py` for providing accessible client/building tree data to templates if needed.[cite:16]
 
-## Coding and collaboration constraints
-- Keep the current Django project structure and shared template approach intact.[file:53][cite:1]
-- Prefer minimal, targeted code changes rather than unrelated refactors, and preserve the user’s existing bulky but organized coding style.[cite:1]
-- When asking AI for help, provide only the current task, relevant files, and the latest handoff summary to reduce context drift on larger projects.[web:16][web:22]
+## Project guardrails
+- Keep changes targeted.
+- Avoid unrelated refactors.
+- Preserve the current Django structure and naming style.[cite:8][cite:17]
+- Reuse current patterns before inventing new abstractions.[cite:10][cite:20]
+- When using AI help, ask for complete updated files for the touched files only.[cite:8]

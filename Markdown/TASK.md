@@ -1,54 +1,55 @@
 # TASK
 
 ## Current task
-Build the Groups-related HTML pages for the BLENDY Django project using the current shared layout and styling approach.[file:53]
+Update project documentation so it reflects the completed Groups-related UI work and captures the next feature: a sliding left panel opened from the hamburger button.[cite:10][cite:11]
 
-## Objective
-Create or refine the Groups UI so it matches the existing pattern already used for Users, Clients, and Buildings pages: a shared `base.html` shell, a top-right page action button, a main content card, and layout/styling controlled primarily from `static/css/app.css`.[file:53]
+## Immediate objective
+Document the current Groups flow accurately and prepare the next coding step for the shared sidebar/tree navigation feature.[cite:10][cite:15]
 
-## Scope
-This task is currently frontend/layout focused.
+## Newly completed / clarified Groups scope
+The Groups work should now be documented as including:
+- `templates/core/groups.html` as the list page.[cite:11]
+- A Group add/detail template following the same shared shell and bulky form style used elsewhere in the project.[cite:10][cite:20]
+- A Group saved/detail template with success messaging, permissions summary, and members list.[cite:20]
+- A Group member-selection template using a checkbox table of available users.[cite:12][cite:20]
+- A Groups nav active-state update so the Groups icon stays yellow across all Groups-related pages in the shared navigation.[cite:10]
+- A UX safeguard for `/groups/add/` so users see a warning if no client exists yet instead of hitting a server error caused by the required `ClientGroup.client` foreign key.[cite:15][cite:21]
 
+## Next implementation task
+Build the shared sliding left panel triggered by the top-left hamburger button in `templates/base.html`.[cite:10]
+When opened, it should show a structure tree with:
+- Profile as top tier.
+- Client as second tier.
+- Buildings under each client as third tier.[cite:15]
+
+## Scope for the next coding round
 In scope:
-- `templates/core/groups.html`.[file:53]
-- Any new Group detail/add template if needed to support the same flow used on Users, Clients, and Buildings pages.[file:53]
-- Small related updates to `core/urls.py`, `core/views.py`, `templates/base.html`, and `static/css/app.css` only if required to support Groups page navigation and layout.[file:53]
+- `templates/base.html` for the sidebar container, overlay, and tree markup.[cite:10]
+- `static/css/app.css` for sidebar positioning, open/close transition, nested tree styling, and responsive behavior.[cite:20]
+- `static/js/app.js` for hamburger toggle behavior and panel dismissal.[cite:18]
+- Small related `core/views.py` adjustments only if template context is required to provide the client/building tree.[cite:16]
 
-Out of scope for this round:
-- Full create/edit/delete backend logic.
-- Model refactors.
-- Permission redesign.
-- Unrelated restyling of Users, Buildings, Clients, Dashboard, or Profile pages.
+Out of scope for the next round:
+- Refactoring unrelated modules.
+- Replacing the existing top icon navigation.
+- Model redesign.
+- Permission-system redesign.
+- Full CRUD cleanup beyond the sidebar task.[cite:15][cite:17]
 
-## Starting point
-- `groups_view` already exists in `core/views.py` and passes filtered `ClientGroup` queryset data into `core/groups.html`.[file:53]
-- `core/urls.py` already includes `path("groups/", views.groups_view, name="groups")`.[file:53]
-- `base.html` already includes a Groups nav item and active-state logic for `groups`.[file:53]
-- The current codebase already has good visual references in `users.html`, `user_detail.html`, `buildings.html`, and `client_detail.html` for table layouts, add-page layouts, action buttons, and form spacing.[file:53]
+## Starting point for the next session
+- `base.html` already includes the hamburger button and the shared authenticated shell, so the sidebar should grow from that existing structure rather than introducing a separate layout system.[cite:10]
+- `app.css` already contains the button, nav, card, table, and banner styles that the sidebar should visually harmonize with.[cite:20]
+- `core/views.py` already contains helper logic for filtering accessible clients and querysets for buildings, which can be reused or minimally extended for the navigation tree.[cite:16]
+- The data model already supports rendering a client-to-buildings hierarchy because `Building` has a foreign key to `Client`.[cite:15]
 
-## Expected deliverables
-1. A polished `groups.html` page aligned with existing BLENDY page patterns.[file:53]
-2. If needed, a matching Group add/detail page template following the same UI language as existing add pages.[file:53]
-3. Only the minimum related updates needed in URLs, views, nav highlighting, and CSS.[file:53]
-4. No fake extra architecture changes outside the Groups flow.
-
-## UI guidance
-- Keep Groups nav visually consistent with the existing icon-nav system in `base.html`.[file:53]
-- Reuse existing button patterns such as `primary-action-btn`, `save-btn`, `cancel-btn`, `icon-btn`, and content-card/table structures where appropriate.[file:53]
-- Follow the same static-first / layout-first approach already used across the project.[file:53]
-- Prefer table layout for list view if the Groups page is analogous to Users and Buildings.[file:53]
-- Keep responsive behavior aligned with the existing CSS pattern, including horizontal scroll on tables for narrower widths when needed.[file:53]
-
-## Suggested relevant files for next AI enquiry
-- `core/views.py`
-- `core/urls.py`
-- `templates/base.html`
-- `templates/core/groups.html`
-- `static/css/app.css`
-- Any new file such as `templates/core/group_detail.html` if created
+## Expected deliverables for the next coding step
+1. A sliding left panel connected to the existing hamburger button.[cite:10]
+2. A tree view that presents Profile, Clients, and Buildings in the required hierarchy.[cite:15]
+3. Only the minimum related HTML, CSS, JS, and context updates needed to support the feature.[cite:10][cite:16][cite:20]
+4. No unrelated architecture or styling refactor.
 
 ## Acceptance criteria
-- Groups page renders under the current authenticated shell without breaking existing pages.[file:53]
-- Groups-related pages use the BLENDY visual language already established in the project.[file:53]
-- Navigation highlighting is correct for all Groups-related pages after the update.[file:53]
-- Changes stay targeted and do not introduce unrelated refactoring.[cite:1]
+- The sidebar opens and closes from the existing hamburger button without breaking the current shared shell.[cite:10]
+- The navigation tree displays clients and their buildings in a structure that matches the existing data relationships.[cite:15]
+- The feature fits the BLENDY visual language already established in `app.css`.[cite:20]
+- Changes remain targeted and do not disturb unrelated modules.[cite:16]
