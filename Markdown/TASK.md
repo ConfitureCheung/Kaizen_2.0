@@ -1,55 +1,51 @@
 # TASK
 
 ## Current task
-Update project documentation so it reflects the completed Groups-related UI work and captures the next feature: a sliding left panel opened from the hamburger button.[cite:10][cite:11]
+Update the project direction so the next coding step focuses on the functional part of the Profile page while keeping the new shared left-panel concept in view.[cite:10]
 
 ## Immediate objective
-Document the current Groups flow accurately and prepare the next coding step for the shared sidebar/tree navigation feature.[cite:10][cite:15]
+Implement real Profile-page behavior instead of layout-only behavior.
+This should include:
+- saving profile information,
+- uploading an avatar image,
+- syncing or corresponding properly with the backend admin page,
+- and preparing the saved data for display in the left panel later.[cite:10][cite:20]
 
-## Newly completed / clarified Groups scope
-The Groups work should now be documented as including:
-- `templates/core/groups.html` as the list page.[cite:11]
-- A Group add/detail template following the same shared shell and bulky form style used elsewhere in the project.[cite:10][cite:20]
-- A Group saved/detail template with success messaging, permissions summary, and members list.[cite:20]
-- A Group member-selection template using a checkbox table of available users.[cite:12][cite:20]
-- A Groups nav active-state update so the Groups icon stays yellow across all Groups-related pages in the shared navigation.[cite:10]
-- A UX safeguard for `/groups/add/` so users see a warning if no client exists yet instead of hitting a server error caused by the required `ClientGroup.client` foreign key.[cite:15][cite:21]
-
-## Next implementation task
-Build the shared sliding left panel triggered by the top-left hamburger button in `templates/base.html`.[cite:10]
-When opened, it should show a structure tree with:
-- Profile as top tier.
-- Client as second tier.
-- Buildings under each client as third tier.[cite:15]
+## Background from the previous step
+The project already uses a shared authenticated shell in `templates/base.html`, including the hamburger button that is intended to open a sliding left panel.[cite:10]
+That left panel is planned to show a tree with Profile at the top tier, Clients at the second tier, and Buildings under each client at the third tier, based on the existing data relationships in the models.[cite:15]
+The left panel should work even before records exist by showing an empty state, and later update automatically when records are created.[cite:15][cite:16]
 
 ## Scope for the next coding round
 In scope:
-- `templates/base.html` for the sidebar container, overlay, and tree markup.[cite:10]
-- `static/css/app.css` for sidebar positioning, open/close transition, nested tree styling, and responsive behavior.[cite:20]
-- `static/js/app.js` for hamburger toggle behavior and panel dismissal.[cite:18]
-- Small related `core/views.py` adjustments only if template context is required to provide the client/building tree.[cite:16]
+- `accounts/profile.html`.
+- The view used by the profile route, currently `profile_view`.[cite:16][cite:17]
+- The relevant model(s) needed to store profile fields and avatar data.[cite:14][cite:15]
+- The relevant `admin.py` configuration so profile records and uploaded image fields can be viewed and managed in Django admin.[cite:14]
+- Small related updates to `templates/base.html`, `static/css/app.css`, and `static/js/app.js` only if required to support avatar display or shared behavior.[cite:10][cite:18][cite:20]
 
 Out of scope for the next round:
 - Refactoring unrelated modules.
 - Replacing the existing top icon navigation.
-- Model redesign.
-- Permission-system redesign.
-- Full CRUD cleanup beyond the sidebar task.[cite:15][cite:17]
+- Redesigning the client/building data model.
+- Broad permission-system changes.
+- Unrelated styling cleanup.[cite:15][cite:17]
 
-## Starting point for the next session
-- `base.html` already includes the hamburger button and the shared authenticated shell, so the sidebar should grow from that existing structure rather than introducing a separate layout system.[cite:10]
-- `app.css` already contains the button, nav, card, table, and banner styles that the sidebar should visually harmonize with.[cite:20]
-- `core/views.py` already contains helper logic for filtering accessible clients and querysets for buildings, which can be reused or minimally extended for the navigation tree.[cite:16]
-- The data model already supports rendering a client-to-buildings hierarchy because `Building` has a foreign key to `Client`.[cite:15]
+## Starting point
+- `profile_view` already exists and currently renders the profile page through the shared shell, but it is still non-functional from a save/persistence point of view.[cite:16]
+- The project already has established CSS patterns for forms, file-upload placeholders, cards, and save buttons that should be reused rather than replaced.[cite:20]
+- The authenticated shell and planned left panel mean profile data should be treated as shared application data, not just isolated form content.[cite:10]
 
 ## Expected deliverables for the next coding step
-1. A sliding left panel connected to the existing hamburger button.[cite:10]
-2. A tree view that presents Profile, Clients, and Buildings in the required hierarchy.[cite:15]
-3. Only the minimum related HTML, CSS, JS, and context updates needed to support the feature.[cite:10][cite:16][cite:20]
-4. No unrelated architecture or styling refactor.
+1. A working profile save flow.
+2. Avatar image upload support.
+3. Django admin visibility and manageability for the saved profile data.
+4. The minimum shared-layout updates needed so profile data can later appear in the left panel or shared header if required.[cite:10]
+5. No unrelated architecture refactor.
 
 ## Acceptance criteria
-- The sidebar opens and closes from the existing hamburger button without breaking the current shared shell.[cite:10]
-- The navigation tree displays clients and their buildings in a structure that matches the existing data relationships.[cite:15]
-- The feature fits the BLENDY visual language already established in `app.css`.[cite:20]
+- Profile information can be saved successfully through the Profile page.
+- Avatar upload works and persists correctly.
+- Saved profile data is visible in the backend admin page.
+- The implementation fits the existing BLENDY visual language and shared shell structure.[cite:10][cite:20]
 - Changes remain targeted and do not disturb unrelated modules.[cite:16]

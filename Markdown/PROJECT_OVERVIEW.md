@@ -1,50 +1,50 @@
 # PROJECT OVERVIEW
 
 ## Current status
-The BLENDY Django project already has its main structure in place, including the `accounts` and `core` apps, shared templates, authentication flow, and page routes for dashboard, users, groups, buildings, clients, and profile.[cite:8][cite:17]
-The project remains layout-first: some pages are backed by real querysets while other pages still use sample or scaffold data, which is an intentional pattern in the current codebase.[cite:16][cite:20]
-The Groups module has moved beyond a placeholder route and should now be treated as a multi-screen flow under the existing shared layout conventions.[cite:11][cite:20]
+The BLENDY Django project already includes the `accounts` and `core` apps, shared authenticated templates, route wiring for dashboard, users, groups, buildings, clients, and profile, and a common visual system in `static/css/app.css`.[cite:8][cite:10][cite:17][cite:20]
+The project is still intentionally hybrid: some screens are queryset-backed and some remain layout-first or sample-data driven while interface work progresses in stages.[cite:16][cite:20]
+The shared navigation model has now expanded beyond the icon row to include a planned sliding left panel triggered from the hamburger button in the authenticated shell.[cite:10]
 
-## Existing application structure
-- `templates/base.html` provides the authenticated shell, including the top bar, hamburger button, breadcrumb bar, page title area, and icon-based navigation.[cite:10]
-- `core/views.py` currently contains queryset-backed list pages for users, groups, and clients, plus sample-data-backed building screens.[cite:16]
-- `core/urls.py` defines named routes for users, groups, buildings, clients, and profile.[cite:17]
-- `static/css/app.css` contains the shared visual language for cards, forms, tables, banners, nav icons, buttons, and responsive adjustments.[cite:20]
-- The data model already supports the future sidebar hierarchy because `ClientGroup` belongs to `Client`, `Building` belongs to `Client`, and `BuildingUser` can be associated to both groups and buildings.[cite:15]
+## Existing structure relevant to the next step
+- `templates/base.html` contains the top bar, hamburger button, breadcrumb bar, page title, and global icon navigation shared across authenticated pages.[cite:10]
+- `core/views.py` already contains helper logic for allowed clients and queryset-backed pages that can be reused to provide shared navigation context.[cite:16]
+- `core/urls.py` already defines the main application page routes that the shared shell depends on.[cite:17]
+- `static/css/app.css` already defines the app’s visual language for cards, forms, banners, tables, buttons, and responsive behavior.[cite:20]
+- The data model already supports a client/building hierarchy because `Building` has a foreign key to `Client`, and related group/building-user relationships also already exist.[cite:15]
 
-## Groups module status
-The Groups area should now be understood as a four-screen flow:
-1. Groups list page.
-2. Group add/edit page.
-3. Group saved/detail page.
-4. Group member-selection page.[cite:11]
+## Groups and navigation state
+The Groups area should now be treated as a multi-screen flow rather than a single placeholder list page, and the Groups icon should remain highlighted across all Groups-related routes in the shared navigation.[cite:10][cite:11]
+The add-group flow also needs a defensive UX path when no client exists yet, because `ClientGroup.client` is required and should not be allowed to fail as a raw integrity error in front of users.[cite:15][cite:21]
 
-These screens should keep the Groups icon highlighted in the shared icon navigation by extending the Groups active-state check in `base.html` to cover all Groups-related route names, not only `groups`.[cite:10]
-The Groups add page also needs a defensive UX path: when no accessible client exists, it should show a warning banner that tells the user to create a client first instead of triggering a server error from the required `client_id` field.[cite:15][cite:21]
+## Sliding left panel direction
+The hamburger-triggered left panel should be implemented in the shared authenticated shell so it can appear on any page that includes the hamburger control.[cite:10]
+The intended tree structure is:
+- Profile as top tier.
+- Client as second tier.
+- Buildings under each client as third tier.[cite:15]
 
-## Styling and UI approach
-- Continue using the existing BLENDY visual language already seen in Users, Clients, and Buildings pages, including `content-card`, `section-head`, `primary-action-btn`, `icon-btn`, `primary-btn`, and `secondary-btn` patterns.[cite:12][cite:13][cite:20]
-- Keep all Groups-related visual additions in `static/css/app.css` rather than introducing a new styling system.[cite:20]
-- Stay with the current pragmatic pattern: accurate layout first, behavior second, with only minimal backend wiring needed to support the screens.[cite:16][cite:20]
+The tree should render cleanly even when no profile/client/building records exist yet, using an empty state initially and queryset-backed data later as records are created.[cite:15][cite:16]
+The panel should also close when the user clicks outside it or chooses page navigation elsewhere, so it behaves consistently across routes.[cite:10]
 
 ## Next planned feature
-The next step is a sliding left panel opened by the hamburger button in the shared top bar.[cite:10]
-The panel is intended to show a structure tree with these tiers:
-- Top tier: Profile.
-- Second tier: Client.
-- Third tier: Buildings under each client.[cite:15]
-
-Because the actual model relationship is `Client -> Building`, the tree should be implemented as navigation hierarchy rather than implying a database parent-child link from Profile to Client.[cite:15][cite:17]
+The next concrete implementation task is the functional part of the Profile page.
+This work should cover:
+- saving profile information,
+- avatar image upload,
+- persistence visible from the backend admin page,
+- and using saved profile information later in the left panel display.[cite:10][cite:20]
 
 ## Files most relevant for the next step
-- `templates/base.html` for adding sidebar markup and preserving the shared shell.[cite:10]
-- `static/css/app.css` for slide-in panel styles, overlay behavior, nested tree styling, and responsive handling.[cite:20]
-- `static/js/app.js` for hamburger interaction and panel toggle behavior.[cite:18]
-- `core/views.py` for providing accessible client/building tree data to templates if needed.[cite:16]
+- `accounts/profile.html` for the profile form UI.
+- The view file currently responsible for the profile page route, which is presently exposed through `profile_view` in `core/views.py`.[cite:16][cite:17]
+- The model file that should store profile metadata or avatar fields.[cite:14][cite:15]
+- The relevant admin configuration so the saved profile data is visible in Django admin.[cite:14]
+- `templates/base.html` if the left panel starts showing live profile information.[cite:10]
+- `static/css/app.css` and `static/js/app.js` for any shared styling or upload/panel behavior support.[cite:18][cite:20]
 
 ## Project guardrails
 - Keep changes targeted.
 - Avoid unrelated refactors.
 - Preserve the current Django structure and naming style.[cite:8][cite:17]
-- Reuse current patterns before inventing new abstractions.[cite:10][cite:20]
-- When using AI help, ask for complete updated files for the touched files only.[cite:8]
+- Reuse the shared shell and CSS language already present in the project.[cite:10][cite:20]
+- Ask for complete updated files for touched files only when using AI help.[cite:8]

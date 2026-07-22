@@ -2,86 +2,79 @@
 
 ## Current status
 The BLENDY Django project already has its main structure in place, including the `accounts` and `core` apps, shared templates, authentication flow, and page routes for dashboard, users, groups, buildings, clients, and profile.[cite:8][cite:17]
-The project is still in a layout-first stage: several pages are already built as HTML/CSS screens, while some backend actions remain scaffold-only or sample-data based.[cite:16][cite:20]
-Groups UI is now no longer just a placeholder list page; it includes a Groups list screen, an add/edit-style screen, a saved/detail-style screen, and a select-members screen aligned to the existing BLENDY page shell approach.[cite:10][cite:11][cite:20]
+The project remains in a pragmatic layout-first stage: some pages already use real querysets while others still use static or sample-data rendering patterns, and that mixed approach is intentional in the current codebase.[cite:16][cite:20]
+The shared layout has now been expanded conceptually to support a global sliding left panel triggered from the hamburger button in `base.html`, so navigation behavior is no longer limited to the top icon row alone.[cite:10]
 
 ## What is already done
 - Custom auth model and login/logout flow are set up in the `accounts` app, and authenticated pages use the shared shell in `templates/base.html`.[cite:8][cite:10]
-- Shared authenticated shell is implemented in `templates/base.html` with breadcrumb bar, page title, and icon-based main navigation.[cite:10]
-- Users pages are already laid out with `users.html` and `user_detail.html`, and the Users nav active state already handles both list and detail pages.[cite:11][cite:12]
+- Shared authenticated shell is implemented in `templates/base.html` with breadcrumb bar, page title, top-left hamburger button, and icon-based main navigation.[cite:10]
+- Users pages are already laid out with `users.html` and `user_detail.html`, and the Users nav active state handles both list and detail pages.[cite:11][cite:12]
 - Clients pages are already laid out with list/detail/saved screens.[cite:11][cite:13]
 - Buildings pages are already laid out with list/detail/report screens.[cite:11][cite:16]
-- `groups_view` and the `/groups/` route already exist, and they already pass filtered `ClientGroup` data to the template layer.[cite:16][cite:17]
-- The Groups area has now been expanded conceptually to include these templates: `groups.html`, `group_detail.html`, `group_saved.html`, and `group_members.html`.[cite:11]
-- The Groups nav item should remain highlighted for all Groups-related pages, not only the `/groups/` list route, so the `base.html` active-state logic should include `group_detail`, `group_saved`, and `group_members` as well as `groups`.[cite:10]
-- A UX improvement has been identified for `/groups/add/`: when no client exists yet, the page should show a friendly warning and guidance to create a client first, instead of raising a database integrity error caused by `ClientGroup.client` being required.[cite:15][cite:21]
+- The Groups area has already been extended beyond the original placeholder state into a list/detail/member-selection style flow aligned with the shared BLENDY page shell and CSS conventions.[cite:11][cite:20]
+- A defensive UX requirement has been identified for `/groups/add/`: when no client exists, the page should show a friendly warning instead of raising a database integrity error, because `ClientGroup.client` is required.[cite:15][cite:21]
+- The next navigation layer has now been defined: a left-side sliding panel should be available from any page that contains the hamburger icon in the shared layout.[cite:10]
+
+## Sliding left panel scope and behavior
+The left panel is intended to be implemented in the shared layout so it can be opened from any page that extends `base.html`.[cite:10]
+It should use the current data relationships to show a structure tree with:
+- Profile as the top tier.
+- Clients as the second tier.
+- Buildings under each client as the third tier.[cite:15]
+
+The panel should support an empty state when there are no records yet, so the UI can be built now without requiring profile, client, or building records to exist first.[cite:15][cite:16]
+Once records are created later, the panel should update from queryset-backed context rather than needing a redesign.[cite:15][cite:16]
+The panel should also close when the user clicks outside it or clicks page-navigation items that redirect elsewhere, so it behaves cleanly across all pages using the shared shell.[cite:10]
 
 ## Important implementation notes
-- Use the existing shared page shell in `base.html`; do not create a separate standalone layout for Groups pages.[cite:10]
+- Use the existing shared page shell in `base.html`; do not create a separate standalone layout system for the left panel.[cite:10]
 - Keep styling inside the established `static/css/app.css` conventions instead of introducing a disconnected CSS approach.[cite:20]
+- Keep interactivity inside the existing `static/js/app.js` file rather than spreading panel behavior across page-specific scripts.[cite:18]
 - Preserve the current project structure, naming style, and minimal-change workflow.[cite:8][cite:10]
-- The project currently mixes real queryset pages and static sample pages, so Groups should continue following the same pragmatic approach: build the HTML accurately first, then wire more behavior later if needed.[cite:16][cite:20]
-- `ClientGroup` has a required foreign key to `Client`, and `Building` also belongs to `Client`; this matters for both error handling and the next navigation-tree feature.[cite:15]
-
-## What changed in the Groups flow
-- Groups should follow the same visual language as Users and Buildings: a top-right action button, a main card with table rows, row-level icon actions, and shared button classes such as `primary-action-btn`, `icon-btn`, `primary-btn`, and `secondary-btn`.[cite:12][cite:20]
-- The Groups flow now includes a detail/add form with a group name field, broad permission toggles, and page-level permission rows to match the provided layout references.[cite:20]
-- The saved/detail screen should include a success banner, action buttons for editing and selecting members, a permissions summary area, and a members table.[cite:20]
-- The select-members screen should show available users in a table with checkboxes and save/cancel actions.[cite:12][cite:20]
-- If no client is available for the current user, the add-group page should render a warning banner with a link or instruction to create a client first instead of attempting to save and crashing.[cite:15][cite:21]
-
-## Next task
-Build the sliding left panel triggered by the top-left hamburger button in the shared header.[cite:10]
-When clicked, it should open a left-side panel showing a structure tree. The planned structure is:
-- Profile as top tier.
-- Client as second tier.
-- Under each client, show the corresponding buildings as third tier.[cite:15]
-
-## Recommended interpretation for the tree
-Because `Building` belongs to `Client`, and `Profile` currently exists as a standalone page route, the cleanest implementation is a navigation tree where Profile is a root-level navigation item and Clients form an expandable branch containing their buildings.[cite:15][cite:17]
-If the visual requirement is to show Profile as the single top-tier root for the whole tree, treat that as a navigation wrapper rather than a data-model parent-child relationship.[cite:15][cite:17]
-
-## Likely next pieces
-- Add sidebar markup container into `templates/base.html` near the existing topbar and page shell.[cite:10]
-- Extend `static/css/app.css` with left-panel layout, overlay, slide animation, nested tree styles, and compact responsive behavior.[cite:20]
-- Update `static/js/app.js` so the hamburger button opens and closes the panel.[cite:10][cite:18]
-- Add queryset/context support so the panel can render accessible clients and their buildings for the logged-in user.[cite:15][cite:16]
-- Keep the current page routes intact; the sidebar should be additive rather than a refactor of the top icon navigation.[cite:10][cite:17]
+- `ClientGroup` and `Building` both relate to `Client`, which is important for tree rendering and for keeping the panel data-driven once records exist.[cite:15]
 
 ## Relevant files for the next session
-- `core/views.py`.[cite:14][cite:16]
-- `core/urls.py`.[cite:16][cite:17]
 - `templates/base.html`.[cite:9][cite:10]
-- `templates/core/groups.html`.[cite:11]
-- `templates/core/group_detail.html`.
-- `templates/core/group_saved.html`.
-- `templates/core/group_members.html`.
 - `static/css/app.css`.[cite:19][cite:20]
 - `static/js/app.js`.[cite:18]
+- `core/views.py`.[cite:14][cite:16]
+- `core/urls.py`.[cite:17]
+- `accounts/profile.html`.
+- Any account/profile model or admin file used to persist profile data.
+
+## Next task
+Work on the functional part of the Profile page.
+
+This next step should include:
+- Saving profile information from the Profile page form into the backend instead of leaving it as layout-only.[cite:10][cite:20]
+- Supporting avatar image upload on the Profile page.[cite:20]
+- Making the saved profile data correspond properly with the backend admin page so records are visible and manageable there.[cite:8][cite:14]
+- Using relevant saved profile data for display in the left panel once that panel is wired in full, especially the top-tier Profile section and any avatar/name display needed there.[cite:10]
 
 ## Constraints for the next edit
-- Keep the edit focused on the shared left panel and the minimum related wiring required to support it.[cite:10][cite:20]
-- Do not refactor unrelated modules.[cite:16]
-- Preserve existing backend queryset logic unless a small sidebar-specific adjustment is necessary.[cite:16]
+- Focus on Profile functionality only.
+- Do not refactor unrelated modules.
+- Preserve the shared `base.html` shell and the new left-panel concept.[cite:10]
+- Keep CSS in `static/css/app.css` and shared interaction logic in `static/js/app.js` unless a backend-specific addition is necessary.[cite:18][cite:20]
 - Keep the same bulky but organized project style and return complete updated files for affected code when requesting AI help.[cite:8][cite:10]
-- Preserve the existing top icon navigation unless there is a deliberate decision later to replace it.[cite:10]
 
 ## Recommended next prompt
 Use a prompt in this shape for the next coding session:
 
 ```text
-Current task: build the sliding left panel from the top-left hamburger button.
+Current task: build the functional part of the Profile page.
 Constraints:
 - keep current Django structure
 - keep existing bulky style
 - no unrelated refactor
-- preserve existing shared base.html shell
-- keep current top icon navigation
-- only touch sidebar-related files unless a small queryset/nav/CSS/JS update is required
+- preserve existing shared base.html shell and left panel concept
+- only touch profile-related files unless a small shared CSS/JS/admin/model update is required
 Relevant files:
-- templates/base.html
+- accounts/profile.html
+- core/views.py or accounts views file used by profile route
+- related models.py
+- related admin.py
 - static/css/app.css
 - static/js/app.js
-- core/views.py
 Please return complete updated files only.
 ```
