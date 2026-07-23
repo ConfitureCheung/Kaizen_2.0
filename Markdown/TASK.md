@@ -1,51 +1,60 @@
 # TASK
 
 ## Current task
-Update the project direction so the next coding step focuses on the functional part of the Profile page while keeping the new shared left-panel concept in view.[cite:10]
+Build the functional part of the Client pages: `clients.html`, `client_detail.html`, and `client_saved.html`.
 
 ## Immediate objective
-Implement real Profile-page behavior instead of layout-only behavior.
+Wire real backend functionality into the three Client-related screens that are currently layout-only or sample-data driven.
+
 This should include:
-- saving profile information,
-- uploading an avatar image,
-- syncing or corresponding properly with the backend admin page,
-- and preparing the saved data for display in the left panel later.[cite:10][cite:20]
+- Queryset-backed client list in `clients.html`.
+- Real client detail data (including buildings and groups) in `client_detail.html`.
+- Working create and edit form handling in `client_saved.html` with POST save, validation feedback, and redirect on success.
+- Django admin registration for `Client` records if not already present.
+- Left panel context kept consistent after any Client create/edit action.
 
 ## Background from the previous step
-The project already uses a shared authenticated shell in `templates/base.html`, including the hamburger button that is intended to open a sliding left panel.[cite:10]
-That left panel is planned to show a tree with Profile at the top tier, Clients at the second tier, and Buildings under each client at the third tier, based on the existing data relationships in the models.[cite:15]
-The left panel should work even before records exist by showing an empty state, and later update automatically when records are created.[cite:15][cite:16]
+The project already uses a shared authenticated shell in `templates/base.html`, including a sliding left panel that renders a Client → Building tree from queryset-backed context.
+The Profile page functional work — save, avatar upload, admin visibility — has been completed.
+The Client model and its relationships to `Building` and `ClientGroup` already exist in `core/models.py`.
+The three Client template files and their URL routes already exist; only the view logic and template data-binding need to be made functional.
 
 ## Scope for the next coding round
-In scope:
-- `accounts/profile.html`.
-- The view used by the profile route, currently `profile_view`.[cite:16][cite:17]
-- The relevant model(s) needed to store profile fields and avatar data.[cite:14][cite:15]
-- The relevant `admin.py` configuration so profile records and uploaded image fields can be viewed and managed in Django admin.[cite:14]
-- Small related updates to `templates/base.html`, `static/css/app.css`, and `static/js/app.js` only if required to support avatar display or shared behavior.[cite:10][cite:18][cite:20]
 
-Out of scope for the next round:
-- Refactoring unrelated modules.
-- Replacing the existing top icon navigation.
-- Redesigning the client/building data model.
+**In scope:**
+- `templates/core/clients.html`
+- `templates/core/client_detail.html`
+- `templates/core/client_saved.html`
+- `core/views.py` — add or update `clients_view`, `client_detail_view`, `client_saved_view`
+- `core/urls.py` — verify or update routes for `clients`, `client_detail`, `client_saved`
+- `core/models.py` — reference only; add a small nullable field only if strictly necessary
+- `core/admin.py` — register `Client` if not already done
+- Small related updates to `static/css/app.css` and `static/js/app.js` only if required to support form behavior or list interactivity
+
+**Out of scope for this round:**
+- Refactoring unrelated modules (Users, Groups, Buildings, Profile).
+- Replacing or redesigning the shared `base.html` shell or left panel.
 - Broad permission-system changes.
-- Unrelated styling cleanup.[cite:15][cite:17]
+- Redesigning the `Client` data model.
+- Unrelated styling cleanup.
 
 ## Starting point
-- `profile_view` already exists and currently renders the profile page through the shared shell, but it is still non-functional from a save/persistence point of view.[cite:16]
-- The project already has established CSS patterns for forms, file-upload placeholders, cards, and save buttons that should be reused rather than replaced.[cite:20]
-- The authenticated shell and planned left panel mean profile data should be treated as shared application data, not just isolated form content.[cite:10]
+- `clients_view`, `client_detail_view`, and `client_saved_view` may already exist in `core/views.py` in a stub or layout-rendering form — confirm before writing from scratch.
+- The project already has established CSS patterns for forms, cards, tables, save buttons, and validation banners that should be reused rather than replaced.
+- The left panel in `base.html` already depends on `sidebar_clients` and `sidebar_profile` context keys — these must continue to be supplied by the view context or a shared context processor.
 
-## Expected deliverables for the next coding step
-1. A working profile save flow.
-2. Avatar image upload support.
-3. Django admin visibility and manageability for the saved profile data.
-4. The minimum shared-layout updates needed so profile data can later appear in the left panel or shared header if required.[cite:10]
-5. No unrelated architecture refactor.
+## Expected deliverables
+1. `clients.html` renders a real queryset-backed list of `Client` records.
+2. `client_detail.html` renders a single client's full details with prefetched buildings and groups.
+3. `client_saved.html` handles both create and edit flows: GET renders form, POST validates and saves, success redirects to `client_detail`.
+4. Django admin shows `Client` records.
+5. Left panel stays consistent after any client write action.
+6. No unrelated architecture refactor.
 
 ## Acceptance criteria
-- Profile information can be saved successfully through the Profile page.
-- Avatar upload works and persists correctly.
-- Saved profile data is visible in the backend admin page.
-- The implementation fits the existing BLENDY visual language and shared shell structure.[cite:10][cite:20]
-- Changes remain targeted and do not disturb unrelated modules.[cite:16]
+- A new `Client` record can be created through the `client_saved.html` form and appears immediately in the `clients.html` list.
+- An existing `Client` record can be edited through the same form and changes are persisted.
+- `client_detail.html` correctly shows the client's buildings and groups from the database.
+- Saved client data is visible in the Django admin panel.
+- The implementation fits the existing BLENDY visual language and shared shell structure.
+- Changes remain targeted and do not disturb unrelated modules.
