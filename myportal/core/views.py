@@ -1,12 +1,22 @@
+import os
+import json
+import requests
+import sqlite3
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
-from .models import Client, Building, ClientGroup, BuildingUser, COUNTRY_CHOICES, PARTNERSHIP_CHOICES
+from .models import Client, Building, ClientGroup, BuildingUser, BuildingDatabase
+from .models import COUNTRY_CHOICES, PARTNERSHIP_CHOICES, CURRENCY_CHOICES, TIMEZONE_CHOICES, BUILDING_TYPE_CHOICES, AREA_UNIT_CHOICES, WEATHER_UNIT_CHOICES
 from accounts.forms import UserProfileForm
 from accounts.models import UserProfile
 
+
+WEATHER_API_KEY = "e9877c4893e043fd8f632826262003"
+GOOGLE_MAPS_API_KEY = "AIzaSyCwvTyOK-c-n0aO80xVtGfVejLuZRtb5Q0"
 
 PAGE_LIST = ["Dashboard", "Users", "Groups", "Buildings", "Clients", "Profile"]
 
@@ -147,55 +157,256 @@ def group_members_view(request, pk):
     })
 
 
-''' Sample Building is required to show building_report.html '''
+def _building_form_context(user, building=None, errors=None):
+    from .views import get_sidebar_context, get_allowed_client_ids
+    clients = Client.objects.filter(id__in=get_allowed_client_ids(user))
+    return {
+        **get_sidebar_context(user),
+        "building": building,
+        "errors": errors or {},
+        "clients": clients,
+        "uploaded_databases": BuildingDatabase.objects.all(),
+        "country_choices": COUNTRY_CHOICES,
+        "currency_choices": CURRENCY_CHOICES,
+        "timezone_choices": TIMEZONE_CHOICES,
+        "building_type_choices": BUILDING_TYPE_CHOICES,
+        "area_unit_choices": AREA_UNIT_CHOICES,
+        "weather_unit_choices": WEATHER_UNIT_CHOICES,
+        "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+    }
+
+
 @login_required
 def buildings_view(request):
-    sample_buildings = []
-    sample_saved_buildings = [
-        {
-            "name": "Sunshine Building",
-            "city": "",
-            "country": "HK",
-            "client": "-",
-        }
-    ]
+    from .views import get_allowed_client_ids, get_sidebar_context
+    buildings = Building.objects.filter(
+        client_id__in=get_allowed_client_ids(request.user)
+    ).select_related("client")
+    deleted_name = request.session.pop("building_deleted_name", None)
     return render(request, "core/buildings.html", {
         **get_sidebar_context(request.user),
-        "buildings": sample_buildings,
-        "sample_saved_buildings": sample_saved_buildings,
+        "buildings": buildings,
+        "deleted_name": deleted_name,
     })
 
 
 @login_required
-def building_detail_view(request):
-    return render(request, "core/building_detail.html", {
+def building_detail_view(request, pk=None):
+    building = get_object_or_404(Building, pk=pk) if pk else None
+
+    if request.method == "POST":
+        errors = {}
+        name = request.POST.get("name", "").strip()
+        address = request.POST.get("address", "").strip()
+        gfa_raw = request.POST.get("gross_floor_area", "").strip()
+
+        if not name:
+            errors["name"] = "Building name is required."
+        if not address:
+            errors["address"] = "Address is required."
+
+        try:
+            gfa = float(gfa_raw) if gfa_raw else None
+            if gfa is None:
+                errors["gross_floor_area"] = "Gross floor area is required."
+        except ValueError:
+            errors["gross_floor_area"] = "Enter a valid number."
+            gfa = None
+
+        client_id = request.POST.get("client_id")
+        client = Client.objects.filter(pk=client_id).first() if client_id else None
+        if not client:
+            errors["client"] = "Please select a client."
+
+        if errors:
+            class _Stub:
+                pass
+            b = building or _Stub()
+            for k, v in request.POST.items():
+                setattr(b, k, v)
+            ctx = _building_form_context(request.user, building=b, errors=errors)
+            return render(request, "core/building_detail.html", ctx)
+
+        def _float(key, default=None):
+            v = request.POST.get(key, "").strip()
+            try:
+                return float(v) if v else default
+            except ValueError:
+                return default
+
+        uploaded_db = BuildingDatabase.objects.filter(
+            pk=request.POST.get("building_database") or 0
+        ).first()
+
+        fields = dict(
+            client=client,
+            name=name,
+            code=request.POST.get("code", "").strip(),
+            address=address,
+            city=request.POST.get("city", "").strip(),
+            state=request.POST.get("state", "").strip(),
+            postal=request.POST.get("postal", "").strip(),
+            country=request.POST.get("country", "HK"),
+            currency=request.POST.get("currency", "HKD"),
+            timezone=request.POST.get("timezone", "Asia/Hong_Kong"),
+            latitude=_float("latitude"),
+            longitude=_float("longitude"),
+            building_type=request.POST.get("building_type", ""),
+            gross_floor_area=gfa,
+            area_unit=request.POST.get("area_unit", "ft2"),
+            occupancy=int(request.POST.get("occupancy", 0) or 0),
+            dashboard_chart=request.POST.get("dashboard_chart", "").strip(),
+            energy_star_id=request.POST.get("energy_star_id", "").strip(),
+            weather_unit_group=request.POST.get("weather_unit_group", "metric"),
+            base_temp_cooling=_float("base_temp_cooling"),
+            base_temp_heating=_float("base_temp_heating"),
+            building_database=uploaded_db,
+            tech_contact_name=request.POST.get("tech_contact_name", "").strip(),
+            tech_contact_email=request.POST.get("tech_contact_email", "").strip(),
+            tech_contact_phone=request.POST.get("tech_contact_phone", "").strip(),
+            building_phone=request.POST.get("building_phone", "").strip(),
+            building_fax=request.POST.get("building_fax", "").strip(),
+        )
+
+        if building:
+            for k, v in fields.items():
+                setattr(building, k, v)
+            if request.FILES.get("photo"):
+                building.photo = request.FILES["photo"]
+            building.save()
+        else:
+            building = Building(**fields)
+            if request.FILES.get("photo"):
+                building.photo = request.FILES["photo"]
+            building.save()
+
+        return redirect(reverse("building_saved", args=[building.pk]) + "?created=1")
+
+    return render(
+        request,
+        "core/building_detail.html",
+        _building_form_context(request.user, building=building)
+    )
+
+
+@login_required
+def building_saved_view(request, pk):
+    from .views import get_sidebar_context
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, "core/building_saved.html", {
         **get_sidebar_context(request.user),
+        "building": building,
+        "created": request.GET.get("created"),
     })
 
 
-''' fake sample data, to use db in next step '''
 @login_required
-def building_report_view(request):
-    monthly_labels = [
-        "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06",
-        "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12",
-    ]
-    last_year_recent = [220, 230, 248, 240, 255, 268, 275, 281, 276, 270, 262, 258]
-    baseline_year_before = [210, 215, 225, 228, 233, 240, 246, 249, 251, 248, 242, 238]
+@require_POST
+def building_delete_view(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    request.session["building_deleted_name"] = building.name
+    building.delete()
+    return redirect("buildings")
 
-    donut_labels = ["Room Temp Logs", "Total KWH Logs"]
-    donut_values = [45, 55]
+
+import sqlite3
+
+@login_required
+def building_report_view(request, pk):
+    from .views import get_sidebar_context
+    building = get_object_or_404(Building, pk=pk)
+
+    weather_data = None
+    weather_error = None
+
+    query = (
+        f"{building.latitude},{building.longitude}"
+        if building.latitude and building.longitude
+        else building.city or None
+    )
+
+    if query:
+        try:
+            r = requests.get(
+                "https://api.weatherapi.com/v1/current.json",
+                params={"key": WEATHER_API_KEY, "q": query, "aqi": "yes"},
+                timeout=5,
+            )
+            weather_data = r.json() if r.status_code == 200 else None
+            if not weather_data:
+                weather_error = f"API error {r.status_code}"
+        except Exception as e:
+            weather_error = str(e)
+
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    this_yr = [0] * 12
+    last_yr = [0] * 12
+    d_labels = ["HVAC", "Lighting", "Other"]
+    d_vals = [0, 0, 0]
+
+    if building.building_database and building.building_database.db_file:
+        try:
+            db_path = building.building_database.db_file.path
+            conn = sqlite3.connect(db_path)
+            cur = conn.cursor()
+
+            # current year
+            cur.execute("""
+                SELECT month, SUM(kwh)
+                FROM energy_monthly
+                WHERE building_name = ?
+                  AND year = CAST(strftime('%Y', 'now') AS INTEGER)
+                GROUP BY month
+                ORDER BY month
+            """, ("Sample Tower",))
+            for m, v in cur.fetchall():
+                if 1 <= m <= 12:
+                    this_yr[m - 1] = float(v or 0)
+
+            # previous year
+            cur.execute("""
+                SELECT month, SUM(kwh)
+                FROM energy_monthly
+                WHERE building_name = ?
+                  AND year = CAST(strftime('%Y', 'now') AS INTEGER) - 1
+                GROUP BY month
+                ORDER BY month
+            """, ("Sample Tower",))
+            for m, v in cur.fetchall():
+                if 1 <= m <= 12:
+                    last_yr[m - 1] = float(v or 0)
+
+            # breakdown
+            cur.execute("""
+                SELECT category, SUM(kwh)
+                FROM energy_breakdown
+                WHERE building_name = ?
+                GROUP BY category
+            """, ("Sample Tower",))
+            cats = {row[0]: float(row[1] or 0) for row in cur.fetchall()}
+            d_vals = [
+                cats.get("HVAC", 0),
+                cats.get("Lighting", 0),
+                cats.get("Other", 0),
+            ]
+
+            cur.close()
+            conn.close()
+        except Exception:
+            # swallow errors for now; you can log them later
+            pass
 
     return render(request, "core/building_report.html", {
         **get_sidebar_context(request.user),
-        "building_name": "Sunshine Building",
-        "building_country": "HK",
-        "monthly_labels": monthly_labels,
-        "last_year_recent": last_year_recent,
-        "baseline_year_before": baseline_year_before,
-        "donut_labels": donut_labels,
-        "donut_values": donut_values,
-        "insight_count": 2,
+        "building": building,
+        "weather_data": weather_data,
+        "weather_error": weather_error,
+        "monthly_labels": json.dumps(months),
+        "last_year_recent": json.dumps(this_yr),
+        "baseline_year_before": json.dumps(last_yr),
+        "donut_labels": json.dumps(d_labels),
+        "donut_values": json.dumps(d_vals),
     })
 
 

@@ -1,146 +1,230 @@
 {% extends "base.html" %}
 
-{% block title %}Add Building{% endblock %}
-{% block breadcrumb %}Buildings / Add{% endblock %}
-{% block page_title %}BLENDY : Add Building{% endblock %}
+{% block title %}{% if building %}Edit Building{% else %}Add Building{% endif %}{% endblock %}
+{% block breadcrumb %}Buildings / {% if building %}{{ building.name }}{% else %}Add{% endif %}{% endblock %}
+{% block page_title %}BLENDY : {% if building %}Edit Building{% else %}Add Building{% endif %}{% endblock %}
 
 {% block content %}
-<form class="building-detail-form" action="#" method="post" enctype="multipart/form-data">
+<form class="building-detail-form" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
+
+    {% if errors %}
+    <div class="inline-message inline-message-error">
+        Please correct the highlighted fields below.
+    </div>
+    {% endif %}
 
     <div class="building-form-layout">
         <section class="content-card form-section building-main-section">
             <div class="section-head">Building Information</div>
 
             <div class="form-grid form-grid-3">
-                <div class="form-field">
-                    <label>Name</label>
-                    <input type="text" placeholder="Name">
+                <div class="form-field{% if errors.name %} form-field-error{% endif %}">
+                    <label>Name <span class="req">*</span></label>
+                    <input type="text" name="name" placeholder="Building Name"
+                           value="{{ building.name|default:'' }}" required>
+                    {% if errors.name %}<span class="field-error">{{ errors.name }}</span>{% endif %}
                 </div>
-                <div class="form-field form-field-span-2">
-                    <label>Address</label>
-                    <input type="text" placeholder="Address">
+
+                <div class="form-field form-field-span-2{% if errors.address %} form-field-error{% endif %}">
+                    <label>Address <span class="req">*</span></label>
+                    <input type="text" name="address" id="address-input"
+                           placeholder="Full address (used for map & weather)"
+                           value="{{ building.address|default:'' }}" required
+                           oninput="scheduleGeocode(this.value)">
+                    {% if errors.address %}<span class="field-error">{{ errors.address }}</span>{% endif %}
                 </div>
 
                 <div class="form-field">
                     <label>City</label>
-                    <input type="text" placeholder="City">
+                    <input type="text" name="city" placeholder="City"
+                           value="{{ building.city|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Province / State</label>
-                    <input type="text" placeholder="Province/State">
+                    <input type="text" name="state" placeholder="Province/State"
+                           value="{{ building.state|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Postal code</label>
-                    <input type="text" placeholder="Postal Code">
+                    <input type="text" name="postal" placeholder="Postal Code"
+                           value="{{ building.postal|default:'' }}">
                 </div>
 
                 <div class="form-field">
                     <label>Country</label>
-                    <select>
-                        <option>Hong Kong</option>
+                    <select name="country">
+                        {% for code, label in country_choices %}
+                        <option value="{{ code }}"
+                            {% if building.country == code %}selected{% elif not building and code == "HK" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="form-field">
                     <label>Currency</label>
-                    <select>
-                        <option>HKD</option>
+                    <select name="currency">
+                        {% for code, label in currency_choices %}
+                        <option value="{{ code }}"
+                            {% if building.currency == code %}selected{% elif not building and code == "HKD" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="form-field">
                     <label>Timezone</label>
-                    <select>
-                        <option>Hong Kong (UTC+8)</option>
+                    <select name="timezone">
+                        {% for tz, label in timezone_choices %}
+                        <option value="{{ tz }}"
+                            {% if building.timezone == tz %}selected{% elif not building and tz == "Asia/Hong_Kong" %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
                 <div class="form-field">
                     <label>Type</label>
-                    <select>
-                        <option>Select One</option>
-                    </select>
-                </div>
-                <div class="form-field">
-                    <label>Gross floor area</label>
-                    <input type="text" value="0">
-                </div>
-                <div class="form-field">
-                    <label>Unit</label>
-                    <select>
-                        <option>ft²</option>
+                    <select name="building_type">
+                        <option value="">Select One</option>
+                        {% for code, label in building_type_choices %}
+                        <option value="{{ code }}" {% if building.building_type == code %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
-                <div class="form-field occupancy-group">
+                <div class="form-field{% if errors.gross_floor_area %} form-field-error{% endif %}">
+                    <label>Gross floor area <span class="req">*</span></label>
+                    <input type="number" step="0.01" name="gross_floor_area"
+                           placeholder="0" min="0"
+                           value="{{ building.gross_floor_area|default:'' }}" required>
+                    {% if errors.gross_floor_area %}<span class="field-error">{{ errors.gross_floor_area }}</span>{% endif %}
+                </div>
+
+                <div class="form-field">
+                    <label>Unit</label>
+                    <select name="area_unit">
+                        {% for code, label in area_unit_choices %}
+                        <option value="{{ code }}" {% if building.area_unit == code %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-field">
                     <label>Occupancy</label>
                     <div class="stepper-field">
-                        <button type="button">-</button>
-                        <input type="text" value="0">
-                        <button type="button">+</button>
+                        <button type="button" onclick="stepOccupancy(-1)">−</button>
+                        <input type="number" name="occupancy" id="occupancy-input"
+                               value="{{ building.occupancy|default:0 }}" min="0">
+                        <button type="button" onclick="stepOccupancy(1)">+</button>
                     </div>
                 </div>
                 <div class="form-field form-field-span-2">
                     <label>Dashboard chart</label>
-                    <input type="text" placeholder="Set dashboard chart">
+                    <input type="text" name="dashboard_chart" placeholder="Set dashboard chart"
+                           value="{{ building.dashboard_chart|default:'' }}">
                 </div>
 
                 <div class="form-field form-field-span-2">
                     <label>Energy Star Property ID</label>
-                    <input type="text">
+                    <input type="text" name="energy_star_id"
+                           value="{{ building.energy_star_id|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Weather unit group</label>
-                    <select>
-                        <option>Metric</option>
+                    <select name="weather_unit_group">
+                        {% for code, label in weather_unit_choices %}
+                        <option value="{{ code }}" {% if building.weather_unit_group == code %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
                 <div class="form-field">
                     <label>Base temp cooling</label>
-                    <input type="text">
+                    <input type="number" step="0.1" name="base_temp_cooling"
+                           value="{{ building.base_temp_cooling|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Base temp heating</label>
-                    <input type="text">
+                    <input type="number" step="0.1" name="base_temp_heating"
+                           value="{{ building.base_temp_heating|default:'' }}">
                 </div>
                 <div class="form-field form-field-empty"></div>
 
-                <div class="form-field form-field-span-2">
-                    <label>Database connection</label>
-                    <select>
-                        <option>----------</option>
+                <div class="form-field{% if errors.client %} form-field-error{% endif %}">
+                    <label>Client <span class="req">*</span></label>
+                    <select name="client_id" required>
+                        <option value="">— select client —</option>
+                        {% for c in clients %}
+                        <option value="{{ c.pk }}" {% if building.client_id == c.pk %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                        {% endfor %}
                     </select>
+                    {% if errors.client %}<span class="field-error">{{ errors.client }}</span>{% endif %}
                 </div>
+
+                <div class="form-field">
+                    <label>Database File</label>
+                    <select name="building_database">
+                        <option value="">——— none ———</option>
+                        {% for db in uploaded_databases %}
+                        <option value="{{ db.pk }}"
+                            {% if building.building_database_id == db.pk %}selected{% endif %}>
+                            {{ db.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+<!--                    <small style="color:#777;">Select a db.sqlite3 file uploaded from Django admin.</small>-->
+                </div>
+
                 <div class="form-field">
                     <label>Photo</label>
-                    <input type="file">
+                    <input type="file" name="photo" accept="image/*">
                 </div>
+
+                <input type="hidden" name="latitude" id="lat-input"
+                       value="{{ building.latitude|default:'' }}">
+                <input type="hidden" name="longitude" id="lng-input"
+                       value="{{ building.longitude|default:'' }}">
             </div>
         </section>
 
         <aside class="content-card form-section building-side-section">
             <div class="section-head">Technical Contact</div>
-
             <div class="form-grid form-grid-1">
                 <div class="form-field">
                     <label>Name</label>
-                    <input type="text" placeholder="Technical Contact Name">
+                    <input type="text" name="tech_contact_name" placeholder="Technical Contact Name"
+                           value="{{ building.tech_contact_name|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Email</label>
-                    <input type="email" placeholder="Technical Contact Email">
+                    <input type="email" name="tech_contact_email" placeholder="Technical Contact Email"
+                           value="{{ building.tech_contact_email|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Phone</label>
-                    <input type="text" placeholder="Technical Contact Phone">
+                    <input type="text" name="tech_contact_phone" placeholder="Technical Contact Phone"
+                           value="{{ building.tech_contact_phone|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Building Phone</label>
-                    <input type="text" placeholder="Phone Number">
+                    <input type="text" name="building_phone" placeholder="Phone Number"
+                           value="{{ building.building_phone|default:'' }}">
                 </div>
                 <div class="form-field">
                     <label>Building Fax</label>
-                    <input type="text" placeholder="Fax Number">
+                    <input type="text" name="building_fax" placeholder="Fax Number"
+                           value="{{ building.building_fax|default:'' }}">
                 </div>
             </div>
         </aside>
@@ -149,9 +233,20 @@
     <section class="content-card form-section weather-section">
         <div class="section-head section-head-inline">
             <span>Weather Location</span>
-            <button type="button" class="secondary-small-btn">Locate by address</button>
+            <button type="button" class="secondary-small-btn" onclick="geocodeAddress()">
+                Locate by address
+            </button>
         </div>
-        <div class="weather-map-placeholder"></div>
+        <div id="map-container" style="height:260px; margin:8px; border:1px solid #e3e3e3; background:#f8f8f9; border-radius:4px; overflow:hidden;">
+            {% if building.latitude and building.longitude %}
+            <div id="map" style="width:100%;height:100%"></div>
+            {% else %}
+            <div id="map-placeholder" style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:14px;">
+                Enter an address above, then click "Locate by address" or wait for auto-detection.
+            </div>
+            <div id="map" style="width:100%;height:100%;display:none"></div>
+            {% endif %}
+        </div>
     </section>
 
     <div class="form-footer-actions">
@@ -162,4 +257,72 @@
         <a href="{% url 'buildings' %}" class="cancel-btn">Cancel</a>
     </div>
 </form>
+
+<style>
+.req { color:#dc3545; margin-left:2px; }
+.form-field-error input,
+.form-field-error select { border-color:#dc3545 !important; }
+</style>
+
+<script>
+const GMAPS_KEY = "{{ google_maps_api_key }}";
+let map, marker;
+let geocodeTimer = null;
+
+{% if building.latitude and building.longitude %}
+window.initMap = function() {
+    const pos = { lat: {{ building.latitude }}, lng: {{ building.longitude }} };
+    map = new google.maps.Map(document.getElementById('map'), { zoom: 15, center: pos });
+    marker = new google.maps.Marker({ position: pos, map });
+};
+{% else %}
+window.initMap = function() {};
+{% endif %}
+
+function scheduleGeocode(addr) {
+    clearTimeout(geocodeTimer);
+    if (addr.length < 5) return;
+    geocodeTimer = setTimeout(() => geocodeAddress(), 1200);
+}
+
+function geocodeAddress() {
+    const addr = document.getElementById('address-input').value.trim();
+    if (!addr) return;
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: addr }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+            const loc = results[0].geometry.location;
+            document.getElementById('lat-input').value = loc.lat();
+            document.getElementById('lng-input').value = loc.lng();
+            showMap(loc.lat(), loc.lng());
+        } else {
+            alert('Could not find location: ' + status);
+        }
+    });
+}
+
+function showMap(lat, lng) {
+    const placeholder = document.getElementById('map-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+    document.getElementById('map').style.display = 'block';
+
+    const pos = { lat, lng };
+    if (!map) {
+        map = new google.maps.Map(document.getElementById('map'), { zoom: 15, center: pos });
+        marker = new google.maps.Marker({ position: pos, map });
+    } else {
+        map.setCenter(pos);
+        marker.setPosition(pos);
+    }
+}
+
+function stepOccupancy(delta) {
+    const el = document.getElementById('occupancy-input');
+    const val = parseInt(el.value || 0) + delta;
+    el.value = Math.max(0, val);
+}
+</script>
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap">
+</script>
 {% endblock %}

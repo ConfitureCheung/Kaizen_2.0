@@ -1,158 +1,467 @@
 {% extends "base.html" %}
-
 {% block title %}Building Report{% endblock %}
-{% block breadcrumb %}Buildings / {{ building_name }}{% endblock %}
-{% block page_title %}BLENDY : Buildings - {{ building_name }}{% endblock %}
 
 {% block content %}
-<div class="building-report-layout">
-    <div class="report-left-column">
-        <section class="content-card report-building-card">
-            <div class="building-photo-placeholder">No building photo</div>
-            <h2 class="report-building-name">{{ building_name }}</h2>
-            <div class="report-building-country">{{ building_country }}</div>
-        </section>
-
-        <section class="content-card report-weather-card">
-            <div class="section-head">Weather</div>
-            <div class="weather-loading-text">Loading weather...</div>
-        </section>
-
-        <section class="content-card report-map-card">
-            <div class="section-head">Location Map</div>
-            <div class="report-map-placeholder"></div>
-        </section>
-    </div>
-
-    <div class="report-main-column">
-        <section class="content-card chart-card">
-            <div class="section-head">TXs Consumption Monthly Comparison</div>
-            <div class="chart-wrap chart-wrap-bar">
-                <canvas id="monthlyComparisonChart"></canvas>
-            </div>
-        </section>
-
-        <div class="report-middle-grid">
-            <section class="content-card chart-card">
-                <div class="section-head">Energy Breakdown Current Week</div>
-                <div class="chart-wrap chart-wrap-donut">
-                    <canvas id="energyBreakdownChart"></canvas>
+<div class="report-page">
+    <div class="report-grid">
+        <!-- LEFT PANEL -->
+        <div class="report-left">
+            <section class="report-card">
+                <div class="report-card-header">
+                    <h3>Building Image</h3>
+                </div>
+                <div class="building-image-box">
+                    {% if building.photo %}
+                        <img src="{{ building.photo.url }}" alt="{{ building.name }} image" class="building-image">
+                    {% else %}
+                        <div class="empty-photo">No building image uploaded.</div>
+                    {% endif %}
+                </div>
+                <div class="report-meta">
+                    <div><strong>Building:</strong> {{ building.name }}</div>
+                    <div><strong>Client:</strong> {% if building.client %}{{ building.client.name }}{% else %}-{% endif %}</div>
+                    <div><strong>Database:</strong> {% if building.building_database %}{{ building.building_database.name }}{% else %}-{% endif %}</div>
                 </div>
             </section>
 
-            <section class="content-card green-facts-card">
-                <div class="section-head">Green Facts</div>
-                <div class="green-facts-body">
-                    <div class="green-facts-icon">
-                        <i class="fa-solid fa-screwdriver-wrench"></i>
+            <section class="report-card">
+                <div class="report-card-header">
+                    <h3>Weather</h3>
+                </div>
+                {% if weather_data %}
+                    <div class="weather-box">
+                        <div class="weather-top">
+                            {% if weather_data.current.condition.icon %}
+                                <img src="https:{{ weather_data.current.condition.icon }}" alt="Weather icon" class="weather-icon">
+                            {% endif %}
+                            <div>
+                                <div class="weather-temp">{{ weather_data.current.temp_c }}°C</div>
+                                <div class="weather-text">{{ weather_data.current.condition.text }}</div>
+                            </div>
+                        </div>
+                        <div class="weather-details">
+                            <div>Humidity: {{ weather_data.current.humidity }}%</div>
+                            <div>Wind: {{ weather_data.current.wind_kph }} kph</div>
+                            <div>Location: {{ weather_data.location.name }}</div>
+                        </div>
                     </div>
-                    <p>Regular filter changes can improve HVAC efficiency by up to 20% and extend system life.</p>
-                    <div class="green-facts-note">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <span>These facts and tips are intended for general information and may not apply to all buildings or regions.</span>
+                {% else %}
+                    <div class="empty-block">
+                        Weather data unavailable{% if weather_error %}: {{ weather_error }}{% endif %}
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="report-card">
+                <div class="report-card-header">
+                    <h3>Location Map</h3>
+                </div>
+                {% if building.latitude and building.longitude %}
+                    <div class="map-box">
+                        <iframe
+                            width="100%"
+                            height="240"
+                            style="border:0;"
+                            loading="lazy"
+                            allowfullscreen
+                            referrerpolicy="no-referrer-when-downgrade"
+                            src="https://www.google.com/maps?q={{ building.latitude }},{{ building.longitude }}&z=15&output=embed">
+                        </iframe>
+                    </div>
+                {% elif building.address %}
+                    <div class="map-box">
+                        <iframe
+                            width="100%"
+                            height="240"
+                            style="border:0;"
+                            loading="lazy"
+                            allowfullscreen
+                            referrerpolicy="no-referrer-when-downgrade"
+                            src="https://www.google.com/maps?q={{ building.address|urlencode }}&z=15&output=embed">
+                        </iframe>
+                    </div>
+                {% else %}
+                    <div class="empty-block">
+                        No map coordinates available for this building.
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="report-right">
+            <section class="report-card">
+                <div class="report-card-header">
+                    <h3>TXs Consumption Monthly Comparison</h3>
+                </div>
+                <div class="chart-wrap tall-chart">
+                    <canvas id="monthlyComparisonChart"></canvas>
+                </div>
+                <div class="chart-footnote">
+                    {% if building.building_database %}
+                        Source: {{ building.building_database.name }}
+                    {% else %}
+                        No building database selected.
+                    {% endif %}
+                </div>
+            </section>
+
+            <div class="report-row-two">
+                <section class="report-card">
+                    <div class="report-card-header">
+                        <h3>Energy Breakdown Current Week</h3>
+                    </div>
+                    <div class="chart-wrap donut-chart-wrap">
+                        <canvas id="energyBreakdownChart"></canvas>
+                    </div>
+                </section>
+
+                <section class="report-card">
+                    <div class="report-card-header">
+                        <h3>Green Facts</h3>
+                    </div>
+                    <div class="facts-box">
+                        <p>Regular filter changes can improve HVAC efficiency by up to 20% and extend system life.</p>
+                        <p>Lowering cooling demand during peak afternoon hours can reduce grid stress and operating cost.</p>
+                        <p>LED retrofits usually cut lighting energy use while also reducing maintenance frequency.</p>
+                        <div class="facts-note">
+                            These facts and tips are intended for general information and may not apply to all buildings or regions.
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <section class="report-card">
+                <div class="report-card-header">
+                    <h3>Insights</h3>
+                </div>
+                <div class="insights-box">
+                    <div class="insight-item">
+                        <div class="insight-label">Total Insights</div>
+                        <div class="insight-value">2 Total Insights, static sample.</div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-label">Selected Database</div>
+                        <div class="insight-value">
+                            {% if building.building_database %}
+                                {{ building.building_database.name }}
+                            {% else %}
+                                No database selected in building_detail.
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-label">Building Image</div>
+                        <div class="insight-value">
+                            {% if building.photo %}
+                                Uploaded and linked.
+                            {% else %}
+                                No image uploaded.
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="insight-item">
+                        <div class="insight-label">Chart Data Status</div>
+                        <div class="insight-value" id="chartDataStatus">Checking data...</div>
                     </div>
                 </div>
             </section>
         </div>
-
-        <section class="content-card insights-card">
-            <div class="section-head">Insights</div>
-            <div class="insights-body">{{ insight_count }} Total Insights, static sample.</div>
-        </section>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const monthlyLabels = {{ monthly_labels|safe }};
-    const lastYearRecent = {{ last_year_recent|safe }};
-    const baselineYearBefore = {{ baseline_year_before|safe }};
-    const donutLabels = {{ donut_labels|safe }};
-    const donutValues = {{ donut_values|safe }};
+const monthlyLabels = {{ monthly_labels|default:"[]"|safe }};
+const thisYearData = {{ last_year_recent|default:"[]"|safe }};
+const lastYearData = {{ baseline_year_before|default:"[]"|safe }};
+const donutLabels = {{ donut_labels|default:"[]"|safe }};
+const donutValues = {{ donut_values|default:"[]"|safe }};
 
-    const monthlyCtx = document.getElementById('monthlyComparisonChart');
-    if (monthlyCtx) {
-        new Chart(monthlyCtx, {
-            type: 'bar',
-            data: {
-                labels: monthlyLabels,
-                datasets: [
-                    {
-                        label: 'Last Year - Recent',
-                        data: lastYearRecent,
-                        backgroundColor: '#5a96e3',
-                        borderColor: '#5a96e3',
-                        borderWidth: 1,
-                        barThickness: 14
-                    },
-                    {
-                        label: 'Baseline 1 Year before',
-                        data: baselineYearBefore,
-                        backgroundColor: '#7bb77d',
-                        borderColor: '#7bb77d',
-                        borderWidth: 1,
-                        barThickness: 14
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        align: 'center'
-                    }
+const hasMonthlyData = Array.isArray(thisYearData) && thisYearData.some(v => Number(v) > 0);
+const hasPreviousData = Array.isArray(lastYearData) && lastYearData.some(v => Number(v) > 0);
+const hasDonutData = Array.isArray(donutValues) && donutValues.some(v => Number(v) > 0);
+
+const chartDataStatus = document.getElementById('chartDataStatus');
+if (chartDataStatus) {
+    if (hasMonthlyData || hasPreviousData || hasDonutData) {
+        chartDataStatus.textContent = 'Loaded from selected building database.';
+    } else {
+        chartDataStatus.textContent = 'No chart data returned from selected building database.';
+    }
+}
+
+const monthlyCtx = document.getElementById('monthlyComparisonChart');
+if (monthlyCtx) {
+    new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+            labels: monthlyLabels.length ? monthlyLabels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+                {
+                    label: 'Current Year',
+                    data: thisYearData.length ? thisYearData : [0,0,0,0,0,0,0,0,0,0,0,0],
+                    backgroundColor: '#2f80ed',
+                    borderRadius: 4
                 },
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            color: '#666'
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 500,
-                        ticks: {
-                            stepSize: 100,
-                            color: '#666'
-                        },
-                        grid: {
-                            color: '#ebebeb'
+                {
+                    label: 'Previous Year',
+                    data: lastYearData.length ? lastYearData : [0,0,0,0,0,0,0,0,0,0,0,0],
+                    backgroundColor: '#a9c8f4',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return Number(value).toLocaleString();
                         }
                     }
                 }
             }
-        });
+        }
+    });
+}
+
+const donutCtx = document.getElementById('energyBreakdownChart');
+if (donutCtx) {
+    new Chart(donutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: donutLabels.length ? donutLabels : ['HVAC', 'Lighting', 'Other'],
+            datasets: [{
+                data: donutValues.length ? donutValues : [0, 0, 0],
+                backgroundColor: ['#2f80ed', '#27ae60', '#f2994a'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            cutout: '62%'
+        }
+    });
+}
+</script>
+
+<style>
+.report-page {
+    padding: 8px 0 18px;
+}
+
+.report-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.9fr) minmax(520px, 2.1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.report-left,
+.report-right {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.report-row-two {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 18px;
+}
+
+.report-card {
+    background: #fff;
+    border: 1px solid #dfe5ec;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+    overflow: hidden;
+}
+
+.report-card-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9edf2;
+    background: #f8fafc;
+}
+
+.report-card-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #243042;
+}
+
+.building-image-box {
+    height: 240px;
+    background: #f4f6f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.building-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.empty-photo,
+.empty-block {
+    padding: 24px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.report-meta {
+    padding: 14px 16px 16px;
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.weather-box {
+    padding: 16px;
+}
+
+.weather-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.weather-icon {
+    width: 54px;
+    height: 54px;
+}
+
+.weather-temp {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.weather-text {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.weather-details {
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.map-box {
+    padding: 14px;
+}
+
+.chart-wrap {
+    position: relative;
+    padding: 16px;
+}
+
+.tall-chart {
+    height: 340px;
+}
+
+.donut-chart-wrap {
+    height: 280px;
+}
+
+.chart-footnote {
+    padding: 0 16px 16px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.facts-box {
+    padding: 16px;
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.7;
+}
+
+.facts-box p {
+    margin: 0 0 12px;
+}
+
+.facts-note {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.insights-box {
+    padding: 8px 0;
+}
+
+.insight-item {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 14px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef2f6;
+}
+
+.insight-item:last-child {
+    border-bottom: none;
+}
+
+.insight-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.insight-value {
+    font-size: 14px;
+    color: #1f2937;
+    word-break: break-word;
+}
+
+@media (max-width: 1100px) {
+    .report-grid {
+        grid-template-columns: 1fr;
     }
 
-    const donutCtx = document.getElementById('energyBreakdownChart');
-    if (donutCtx) {
-        new Chart(donutCtx, {
-            type: 'doughnut',
-            data: {
-                labels: donutLabels,
-                datasets: [{
-                    data: donutValues,
-                    backgroundColor: ['#2f5597', '#7ea6de'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '55%',
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        align: 'center'
-                    }
-                }
-            }
-        });
+    .report-row-two {
+        grid-template-columns: 1fr;
     }
-</script>
+}
+
+@media (max-width: 640px) {
+    .insight-item {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .tall-chart {
+        height: 280px;
+    }
+
+    .donut-chart-wrap {
+        height: 240px;
+    }
+
+    .building-image-box {
+        height: 220px;
+    }
+}
+</style>
 {% endblock %}

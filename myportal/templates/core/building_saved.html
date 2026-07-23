@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Building{% endblock %}
+{% block content %}
+<div class="client-saved-page">
+
+  {% if created %}
+  <div class="inline-message inline-message-success" id="save-msg" style="margin-bottom:14px;">
+      <i class="fa-solid fa-check-circle" style="margin-right:6px;"></i>
+      Building has been successfully created.
+  </div>
+  {% endif %}
+
+  <section class="client-summary-card">
+      <div class="client-summary-grid">
+          <div class="client-logo-box">
+              {% if building.photo %}
+                  <img src="{{ building.photo.url }}" alt="{{ building.name }} photo"
+                       style="max-width:100%; max-height:100%; object-fit:contain; padding:10px;">
+              {% else %}
+                  <div class="client-logo-placeholder">No image</div>
+              {% endif %}
+          </div>
+          <div class="client-summary-info">
+              <h2>{{ building.name }}</h2>
+              <p>Client: {% if building.client %}{{ building.client.name }}{% else %}-{% endif %}</p>
+              <p>Address: {% if building.address %}{{ building.address }}{% else %}-{% endif %}</p>
+              <p>
+                  Gross Floor Area:
+                  {% if building.gross_floor_area %}
+                      {{ building.gross_floor_area }} {{ building.area_unit }}
+                  {% else %}
+                      -
+                  {% endif %}
+              </p>
+              <p>Phone: {% if building.building_phone %}{{ building.building_phone }}{% else %}-{% endif %}</p>
+          </div>
+      </div>
+  </section>
+
+  <div style="display:flex; gap:10px; margin-top:4px; flex-wrap:wrap;">
+      <a href="{% url 'building_edit' building.pk %}" class="primary-btn">
+          <i class="fa-regular fa-pen-to-square" style="margin-right:6px;"></i>Edit
+      </a>
+      <a href="{% url 'building_report' building.pk %}" class="primary-btn">
+          <i class="fa-regular fa-chart-bar" style="margin-right:6px;"></i>View Report
+      </a>
+      <a href="{% url 'buildings' %}" class="secondary-btn">Back to list</a>
+  </div>
+</div>
+
+{% if created %}
+<script>
+var msg = document.getElementById('save-msg');
+if (msg) {
+    setTimeout(function() {
+        msg.style.transition = 'opacity 0.4s';
+        msg.style.opacity = '0';
+        setTimeout(function() { msg.remove(); }, 420);
+    }, 4000);
+}
+</script>
+{% endif %}
+{% endblock %}
