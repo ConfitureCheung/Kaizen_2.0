@@ -121,3 +121,4 @@ class BuildingUserAdmin(admin.ModelAdmin):
     search_fields = ("full_name", "email", "client__name")
     list_filter = ("client", "is_active")
     filter_horizontal = ("groups", "buildings")
+
