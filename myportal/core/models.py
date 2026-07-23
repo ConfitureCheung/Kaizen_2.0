@@ -155,3 +155,4 @@ class BuildingUser(models.Model):
 
     def __str__(self):
         return f"{self.client.name} / {self.full_name}"
+
