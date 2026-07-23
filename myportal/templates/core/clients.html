@@ -1,31 +1,77 @@
 {% extends "base.html" %}
-
 {% block title %}Clients{% endblock %}
 {% block breadcrumb %}Clients{% endblock %}
 {% block page_title %}BLENDY : Clients{% endblock %}
 
 {% block content %}
 <div class="clients-page">
-    <div class="page-actions">
-        <a href="{% url 'client_detail' %}" class="primary-btn">Add client</a>
-    </div>
 
-    <section class="list-card">
-        <table class="entity-table clients-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>City</th>
-                    <th>Country</th>
-                    <th class="actions-col"></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="4" class="table-empty">No data to display</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
+  {% if deleted_name %}
+  <div class="inline-message inline-message-success" id="delete-msg" style="margin-bottom:14px;">
+      <i class="fa-solid fa-check-circle" style="margin-right:6px;"></i>
+      &ldquo;{{ deleted_name }}&rdquo; has been successfully deleted.
+  </div>
+  {% endif %}
+
+  <div class="page-actions">
+      <a href="{% url 'client_detail' %}" class="primary-btn">Add client</a>
+  </div>
+
+  <section class="list-card">
+      <table class="entity-table clients-table">
+          <thead>
+              <tr>
+                  <th>Name</th>
+                  <th>City</th>
+                  <th>Country</th>
+                  <th class="actions-col"></th>
+              </tr>
+          </thead>
+          <tbody>
+              {% if clients %}
+                  {% for client in clients %}
+                  <tr id="client-row-{{ client.pk }}">
+                      <td>{{ client.name }}</td>
+                      <td>{{ client.city|default:"-" }}</td>
+                      <td>{{ client.get_country_display }}</td>
+                      <td class="row-actions">
+                          <a href="{% url 'client_saved' client.pk %}" class="icon-action" title="View">
+                              <i class="fa-regular fa-eye"></i>
+                          </a>
+                          <a href="{% url 'client_edit' client.pk %}" class="icon-action" title="Edit">
+                              <i class="fa-regular fa-pen-to-square"></i>
+                          </a>
+                          <button type="button" class="icon-action danger" title="Delete"
+                                  onclick="confirmDelete({{ client.pk }}, '{{ client.name|escapejs }}')">
+                              <i class="fa-regular fa-trash-can"></i>
+                          </button>
+                      </td>
+                  </tr>
+                  {% endfor %}
+              {% else %}
+              <tr><td colspan="4" class="table-empty">No data to display</td></tr>
+              {% endif %}
+          </tbody>
+      </table>
+  </section>
 </div>
+
+<form id="delete-form" method="post" action="" style="display:none;">{% csrf_token %}</form>
+
+<script>
+function confirmDelete(pk, name) {
+    if (!confirm('Delete client "' + name + '"? This cannot be undone.')) return;
+    var form = document.getElementById('delete-form');
+    form.action = '/clients/' + pk + '/delete/';
+    form.submit();
+}
+var msg = document.getElementById('delete-msg');
+if (msg) {
+    setTimeout(function() {
+        msg.style.transition = 'opacity 0.4s';
+        msg.style.opacity = '0';
+        setTimeout(function() { msg.remove(); }, 420);
+    }, 4000);
+}
+</script>
 {% endblock %}

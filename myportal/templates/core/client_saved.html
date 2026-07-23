@@ -1,25 +1,52 @@
 {% extends "base.html" %}
-
 {% block title %}Client{% endblock %}
-{% block breadcrumb %}Clients{% endblock %}
-{% block page_title %}BLENDY : Client{% endblock %}
-
 {% block content %}
 <div class="client-saved-page">
-    <section class="client-summary-card">
-        <div class="client-summary-grid">
-            <div class="client-logo-box">
-                <div class="client-logo-placeholder">No logo</div>
-            </div>
 
-            <div class="client-summary-info">
-                <h2>MTR</h2>
-                <p>HK</p>
-                <p>Partnership: Skyforce</p>
-                <p>Phone: -</p>
-                <p>Fax: -</p>
-            </div>
-        </div>
-    </section>
+  {% if created %}
+  <div class="inline-message inline-message-success" id="save-msg" style="margin-bottom:14px;">
+      <i class="fa-solid fa-check-circle" style="margin-right:6px;"></i>
+      Client has been successfully created.
+  </div>
+  {% endif %}
+
+  <section class="client-summary-card">
+      <div class="client-summary-grid">
+          <div class="client-logo-box">
+              {% if client.logo %}
+                  <img src="{{ client.logo.url }}" alt="{{ client.name }} logo"
+                       style="max-width:100%; max-height:100%; object-fit:contain; padding:10px;">
+              {% else %}
+                  <div class="client-logo-placeholder">No logo</div>
+              {% endif %}
+          </div>
+          <div class="client-summary-info">
+              <h2>{{ client.name }}</h2>
+              <p>Partnership: {{ client.get_partnership_display }}</p>
+              <p>Phone: {% if client.phone %}{{ client.phone }}{% else %}-{% endif %}</p>
+              <p>Fax: {% if client.fax %}{{ client.fax }}{% else %}-{% endif %}</p>
+          </div>
+      </div>
+  </section>
+
+  <div style="display:flex; gap:10px; margin-top:4px;">
+      <a href="{% url 'client_edit' client.pk %}" class="primary-btn">
+          <i class="fa-regular fa-pen-to-square" style="margin-right:6px;"></i>Edit
+      </a>
+      <a href="{% url 'clients' %}" class="secondary-btn">Back to list</a>
+  </div>
 </div>
+
+{% if created %}
+<script>
+var msg = document.getElementById('save-msg');
+if (msg) {
+    setTimeout(function() {
+        msg.style.transition = 'opacity 0.4s';
+        msg.style.opacity = '0';
+        setTimeout(function() { msg.remove(); }, 420);
+    }, 4000);
+}
+</script>
+{% endif %}
 {% endblock %}

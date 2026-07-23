@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 
-from .models import Client, Building, ClientGroup, BuildingUser
+from .models import Client, Building, ClientGroup, BuildingUser, COUNTRY_CHOICES, PARTNERSHIP_CHOICES
 from accounts.forms import UserProfileForm
 from accounts.models import UserProfile
 
@@ -205,9 +205,76 @@ def clients_view(request):
         clients = Client.objects.all()
     else:
         clients = Client.objects.filter(memberships__user=request.user).distinct()
+    deleted_name = request.session.pop("client_deleted_name", None)
     return render(request, "core/clients.html", {
         **get_sidebar_context(request.user),
-        "clients": clients
+        "clients": clients,
+        "deleted_name": deleted_name,
+    })
+
+
+@login_required
+def client_delete_view(request, pk):
+    if request.method != "POST":
+        return redirect("clients")
+    client = get_object_or_404(Client, pk=pk)
+    name = client.name
+    client.delete()
+    request.session["client_deleted_name"] = name
+    return redirect("clients")
+
+
+@login_required
+def client_detail_view(request, pk=None):
+    client = get_object_or_404(Client, pk=pk) if pk else None
+    if request.method == "POST":
+        name = request.POST.get("client_name", "").strip()
+        if not name:
+            return render(request, "core/client_detail.html", {
+                **get_sidebar_context(request.user),
+                "client": client, "country_choices": COUNTRY_CHOICES,
+                "partnership_choices": PARTNERSHIP_CHOICES, "name_error": True,
+            })
+        data = {
+            "name": name,
+            "address":     request.POST.get("client_address", "").strip(),
+            "city":        request.POST.get("client_city", "").strip(),
+            "state":       request.POST.get("client_state", "").strip(),
+            "postal":      request.POST.get("client_postal", "").strip(),
+            "country":     request.POST.get("client_country", "HK"),
+            "partnership": request.POST.get("client_partnership", "skyforce"),
+            "phone":       request.POST.get("client_phone", "").strip(),
+            "fax":         request.POST.get("client_fax", "").strip(),
+        }
+        if client:
+            for k, v in data.items():
+                setattr(client, k, v)
+            if request.FILES.get("client_logo"):
+                client.logo = request.FILES["client_logo"]
+            client.save()
+        else:
+            client = Client(**data)
+            if request.FILES.get("client_logo"):
+                client.logo = request.FILES["client_logo"]
+            client.save()
+        return redirect(reverse("client_saved", args=[client.pk]) + "?created=1")
+
+    return render(request, "core/client_detail.html", {
+        **get_sidebar_context(request.user),
+        "client": client,
+        "country_choices": COUNTRY_CHOICES,
+        "partnership_choices": PARTNERSHIP_CHOICES,
+    })
+
+
+@login_required
+def client_saved_view(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    created = request.GET.get("created")
+    return render(request, "core/client_saved.html", {
+        **get_sidebar_context(request.user),
+        "client": client,
+        "created": created,
     })
 
 
@@ -236,18 +303,4 @@ def profile_view(request):
         **get_sidebar_context(request.user),
         "form": form,
         "profile": profile,
-    })
-
-
-@login_required
-def client_detail_view(request):
-    return render(request, "core/client_detail.html", {
-        **get_sidebar_context(request.user),
-    })
-
-
-@login_required
-def client_saved_view(request):
-    return render(request, "core/client_saved.html", {
-        **get_sidebar_context(request.user),
     })

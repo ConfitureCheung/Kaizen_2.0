@@ -1,85 +1,125 @@
 {% extends "base.html" %}
-
 {% block title %}Client Detail{% endblock %}
-{% block breadcrumb %}Clients{% endblock %}
-{% block page_title %}BLENDY : Client Detail{% endblock %}
-
 {% block content %}
 <div class="client-detail-page">
-    <form class="client-form" action="#" method="post">
-        <div class="client-form-grid client-form-grid-2">
-            <div class="form-field">
-                <label for="client_name">Name</label>
-                <input type="text" id="client_name" name="client_name" placeholder="Name">
-            </div>
 
-            <div class="form-field">
-                <label for="client_address">Address</label>
-                <input type="text" id="client_address" name="client_address" placeholder="Address">
-            </div>
-        </div>
+  {% if name_error %}
+  <div class="inline-message inline-message-error" style="margin-bottom:14px;">
+      <i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>
+      Client name is required.
+  </div>
+  {% endif %}
 
-        <div class="client-form-grid client-form-grid-3">
-            <div class="form-field">
-                <label for="client_city">City</label>
-                <input type="text" id="client_city" name="client_city" placeholder="City">
-            </div>
+  <form class="client-form"
+        action="{% if client %}{% url 'client_edit' client.pk %}{% else %}{% url 'client_detail' %}{% endif %}"
+        method="post" enctype="multipart/form-data">
+      {% csrf_token %}
 
-            <div class="form-field">
-                <label for="client_state">Province / State</label>
-                <input type="text" id="client_state" name="client_state" placeholder="Province/State">
-            </div>
+      {# Row 1: Name + Address #}
+      <div class="client-form-grid client-form-grid-2">
+          <div class="form-field">
+              <label for="client_name">Name</label>
+              <input type="text" id="client_name" name="client_name" placeholder="Name"
+                     value="{% if client %}{{ client.name }}{% endif %}">
+          </div>
+          <div class="form-field">
+              <label for="client_address">Address</label>
+              <input type="text" id="client_address" name="client_address" placeholder="Address"
+                     value="{% if client %}{{ client.address }}{% endif %}">
+          </div>
+      </div>
 
-            <div class="form-field">
-                <label for="client_postal">Postal code</label>
-                <input type="text" id="client_postal" name="client_postal" placeholder="Postal Code">
-            </div>
-        </div>
+      {# Row 2: City / State / Postal #}
+      <div class="client-form-grid client-form-grid-3">
+          <div class="form-field">
+              <label for="client_city">City</label>
+              <input type="text" id="client_city" name="client_city" placeholder="City"
+                     value="{% if client %}{{ client.city }}{% endif %}">
+          </div>
+          <div class="form-field">
+              <label for="client_state">Province / State</label>
+              <input type="text" id="client_state" name="client_state" placeholder="Province/State"
+                     value="{% if client %}{{ client.state }}{% endif %}">
+          </div>
+          <div class="form-field">
+              <label for="client_postal">Postal code</label>
+              <input type="text" id="client_postal" name="client_postal" placeholder="Postal Code"
+                     value="{% if client %}{{ client.postal }}{% endif %}">
+          </div>
+      </div>
 
-        <div class="client-form-grid client-form-grid-3">
-            <div class="form-field">
-                <label for="client_country">Country</label>
-                <select id="client_country" name="client_country">
-                    <option>Hong Kong</option>
-                </select>
-            </div>
+      {# Row 3: Country / Partnership / Phone #}
+      <div class="client-form-grid client-form-grid-3">
+          <div class="form-field">
+              <label for="client_country">Country</label>
+              <select id="client_country" name="client_country">
+                  {% for code, label in country_choices %}
+                  <option value="{{ code }}"
+                      {% if client and client.country == code %}selected{% endif %}
+                      {% if not client and code == 'HK' %}selected{% endif %}
+                  >{{ label }}</option>
+                  {% endfor %}
+              </select>
+          </div>
+          <div class="form-field">
+              <label for="client_partnership">Partnership</label>
+              <select id="client_partnership" name="client_partnership">
+                  {% for val, label in partnership_choices %}
+                  <option value="{{ val }}"
+                      {% if client and client.partnership == val %}selected{% endif %}
+                      {% if not client and val == 'skyforce' %}selected{% endif %}
+                  >{{ label }}</option>
+                  {% endfor %}
+              </select>
+          </div>
+          <div class="form-field">
+              <label for="client_phone">Phone number</label>
+              <input type="text" id="client_phone" name="client_phone" placeholder="Phone Number"
+                     value="{% if client %}{{ client.phone }}{% endif %}">
+          </div>
+      </div>
 
-            <div class="form-field">
-                <label for="client_partnership">Partnership</label>
-                <select id="client_partnership" name="client_partnership">
-                    <option>Skyforce</option>
-                </select>
-            </div>
+      {# Row 4: Fax + Logo #}
+      <div class="client-form-grid client-form-grid-3 form-last-row">
+          <div class="form-field">
+              <label for="client_fax">Fax number</label>
+              <input type="text" id="client_fax" name="client_fax" placeholder="Fax Number"
+                     value="{% if client %}{{ client.fax }}{% endif %}">
+          </div>
+          <div class="form-field form-field-span-2">
+              <label>Logo</label>
+              <div class="avatar-upload-row" id="logo-upload-row">
+                  <button type="button" class="file-btn" id="logo-choose-btn">Choose file</button>
+                  <div class="file-name" id="logo-file-name">
+                      {% if client and client.logo %}
+                          {{ client.logo.name|cut:"client_logos/" }}
+                      {% else %}
+                          No file chosen
+                      {% endif %}
+                  </div>
+                  <input type="file" id="client_logo" name="client_logo"
+                         accept="image/*" style="display:none;">
+              </div>
+          </div>
 
-            <div class="form-field">
-                <label for="client_phone">Phone number</label>
-                <input type="text" id="client_phone" name="client_phone" placeholder="Phone Number">
-            </div>
-        </div>
-
-        <div class="client-form-grid client-form-grid-3 form-last-row">
-            <div class="form-field">
-                <label for="client_fax">Fax number</label>
-                <input type="text" id="client_fax" name="client_fax" placeholder="Fax Number">
-            </div>
-
-            <div class="form-field form-field-span-2">
-                <label for="client_logo">Logo</label>
-                <div class="fake-file-upload">
-                    <button type="button" class="file-btn">Choose file</button>
-                    <div class="file-name">No file chosen</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-actions">
-            <a href="{% url 'client_saved' %}" class="primary-btn with-icon">
-                <i class="fa-regular fa-floppy-disk"></i>
-                <span>Save</span>
-            </a>
-
-            <a href="{% url 'clients' %}" class="secondary-btn">Cancel</a>
-        </div>
-    </form>
+      <div class="form-actions">
+          <button type="submit" class="primary-btn with-icon">
+              <i class="fa-regular fa-floppy-disk"></i><span>Save</span>
+          </button>
+          <a href="{% url 'clients' %}" class="secondary-btn">Cancel</a>
+      </div>
+  </form>
 </div>
+
+<script>
+(function () {
+    var input   = document.getElementById('client_logo');
+    var btn     = document.getElementById('logo-choose-btn');
+    var nameDiv = document.getElementById('logo-file-name');
+    btn.addEventListener('click', function () { input.click(); });
+    input.addEventListener('change', function () {
+        nameDiv.textContent = input.files.length ? input.files[0].name : 'No file chosen';
+    });
+})();
+</script>
 {% endblock %}

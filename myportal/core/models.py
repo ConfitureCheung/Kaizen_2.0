@@ -1,5 +1,30 @@
 from django.conf import settings
 from django.db import models
+from django.utils.text import slugify
+
+
+PARTNERSHIP_CHOICES = [
+    ("skyforce", "Skyforce"),
+    ("others", "Others"),
+]
+
+COUNTRY_CHOICES = [
+    ("HK", "Hong Kong"),
+    ("CN", "China"),
+    ("JP", "Japan"),
+    ("KR", "South Korea"),
+    ("SG", "Singapore"),
+    ("TW", "Taiwan"),
+    ("AU", "Australia"),
+    ("GB", "United Kingdom"),
+    ("US", "United States"),
+    ("CA", "Canada"),
+    ("DE", "Germany"),
+    ("FR", "France"),
+    ("NL", "Netherlands"),
+    ("AE", "UAE"),
+    ("IN", "India"),
+]
 
 
 class DatabaseConnection(models.Model):
@@ -28,16 +53,34 @@ class DatabaseConnection(models.Model):
 
 class Client(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    code = models.SlugField(max_length=100, unique=True)
+    code = models.SlugField(max_length=100, unique=True, blank=True, null=True)
+    address = models.CharField(max_length=500, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    postal = models.CharField(max_length=20, blank=True)
+    country = models.CharField(max_length=5, choices=COUNTRY_CHOICES, default="HK", blank=True)
+    partnership = models.CharField(max_length=20, choices=PARTNERSHIP_CHOICES, default="skyforce", blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    fax = models.CharField(max_length=50, blank=True)
+    logo = models.ImageField(upload_to="client_logos/", blank=True, null=True)
     contact_person = models.CharField(max_length=255, blank=True)
     email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=50, blank=True)
-    address = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["name"]
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            base_slug = slugify(self.name) or "client"
+            unique_slug = base_slug
+            counter = 1
+            while Client.objects.filter(code=unique_slug).exclude(pk=self.pk).exists():
+                unique_slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.code = unique_slug
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
