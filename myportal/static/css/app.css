@@ -650,9 +650,9 @@ Profile
 }
 
 .inline-message-error {
-    background: #fee2e2;
-    border: 1px solid #fca5a5;
-    color: #991b1b;
+    background: #fde8e8;
+    color: #9b1c1c;
+    border: 1px solid #f5c2c7;
 }
 
 .inline-message-warning {

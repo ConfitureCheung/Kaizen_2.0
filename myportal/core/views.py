@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from django.db.models.deletion import ProtectedError
 
 from .models import Client, Building, ClientGroup, BuildingUser, BuildingDatabase
 from .models import COUNTRY_CHOICES, PARTNERSHIP_CHOICES, CURRENCY_CHOICES, TIMEZONE_CHOICES, BUILDING_TYPE_CHOICES, AREA_UNIT_CHOICES, WEATHER_UNIT_CHOICES
@@ -410,6 +411,19 @@ def building_report_view(request, pk):
     })
 
 
+# @login_required
+# def clients_view(request):
+#     if request.user.is_superuser or request.user.is_staff or request.user.is_provider:
+#         clients = Client.objects.all()
+#     else:
+#         clients = Client.objects.filter(memberships__user=request.user).distinct()
+#     deleted_name = request.session.pop("client_deleted_name", None)
+#     return render(request, "core/clients.html", {
+#         **get_sidebar_context(request.user),
+#         "clients": clients,
+#         "deleted_name": deleted_name,
+#     })
+
 @login_required
 def clients_view(request):
     if request.user.is_superuser or request.user.is_staff or request.user.is_provider:
@@ -417,21 +431,41 @@ def clients_view(request):
     else:
         clients = Client.objects.filter(memberships__user=request.user).distinct()
     deleted_name = request.session.pop("client_deleted_name", None)
+    delete_error = request.session.pop("client_delete_error", None)
     return render(request, "core/clients.html", {
         **get_sidebar_context(request.user),
         "clients": clients,
         "deleted_name": deleted_name,
+        "delete_error": delete_error,
     })
 
 
+# @login_required
+# def client_delete_view(request, pk):
+#     if request.method != "POST":
+#         return redirect("clients")
+#     client = get_object_or_404(Client, pk=pk)
+#     name = client.name
+#     client.delete()
+#     request.session["client_deleted_name"] = name
+#     return redirect("clients")
+
 @login_required
+@require_POST
 def client_delete_view(request, pk):
-    if request.method != "POST":
-        return redirect("clients")
     client = get_object_or_404(Client, pk=pk)
-    name = client.name
-    client.delete()
-    request.session["client_deleted_name"] = name
+
+    try:
+        client_name = client.name
+        client.delete()
+        request.session["client_deleted_name"] = client_name
+        request.session["client_delete_error"] = None
+    except ProtectedError:
+        request.session["client_deleted_name"] = None
+        request.session["client_delete_error"] = (
+            f'Client "{client.name}" cannot be deleted because one or more buildings are linked to it.'
+        )
+
     return redirect("clients")
 
 

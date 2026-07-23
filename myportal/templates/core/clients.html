@@ -13,6 +13,13 @@
   </div>
   {% endif %}
 
+  {% if delete_error %}
+    <div class="inline-message inline-message-error" id="delete-error-msg" style="margin-bottom:14px;">
+        <i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>
+        {{ delete_error }}
+    </div>
+  {% endif %}
+
   <div class="page-actions">
       <a href="{% url 'client_detail' %}" class="primary-btn">Add client</a>
   </div>
