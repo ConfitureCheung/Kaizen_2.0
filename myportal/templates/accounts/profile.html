@@ -1,46 +1,108 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Profile{% endblock %}
 {% block breadcrumb %}Profile{% endblock %}
 {% block page_title %}BLENDY : Profile{% endblock %}
 
 {% block content %}
-<div class="profile-layout">
+
+{% if messages %}
+    <div class="message-stack">
+        {% for message in messages %}
+            <div class="inline-message inline-message-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form class="profile-layout" action="{% url 'profile' %}" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
     <section class="profile-card avatar-card">
         <div class="avatar-preview">
-            <div class="avatar-circle">No avatar</div>
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="Avatar" class="avatar-shape avatar-img" id="avatarPreviewImage">
+            {% else %}
+                <div class="avatar-shape avatar-placeholder" id="avatarPreviewPlaceholder">No avatar</div>
+            {% endif %}
         </div>
 
         <div class="avatar-upload-row">
-            <button type="button" class="file-btn">Choose file</button>
-            <div class="file-name">No file chosen</div>
+            <label for="avatar-upload" class="file-btn">Choose file</label>
+            <div class="file-name" id="avatar-file-name">
+                {% if profile.avatar %}
+                    Avatar selected
+                {% else %}
+                    No file chosen
+                {% endif %}
+            </div>
+            <input type="file" name="avatar" id="avatar-upload" accept="image/*" hidden>
         </div>
-    </section>
 
-    <section class="profile-card profile-form-card">
-        <form class="profile-form" action="#" method="post">
-            <div class="profile-form-grid">
-                <div class="profile-field">
-                    <label for="display_name">Display name</label>
-                    <input type="text" id="display_name" name="display_name">
-                </div>
-
-                <div class="profile-field">
-                    <label for="company">Company</label>
-                    <input type="text" id="company" name="company">
-                </div>
-            </div>
-
-            <div class="profile-field profile-notes-field">
-                <label for="notes">Notes</label>
-                <textarea id="notes" name="notes"></textarea>
-            </div>
-
+        <div class="avatar-save-row">
             <button type="submit" class="save-btn">
                 <i class="fa-regular fa-floppy-disk"></i>
                 <span>Save</span>
             </button>
-        </form>
+        </div>
     </section>
-</div>
+
+    <section class="profile-card profile-form-card">
+        <div class="profile-form-grid">
+            <div class="profile-field">
+                <label for="id_display_name">Display Name</label>
+                {{ form.display_name }}
+                {% if form.display_name.errors %}
+                    <span class="field-error">{{ form.display_name.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="profile-field">
+                <label for="id_company">Company</label>
+                {{ form.company }}
+                {% if form.company.errors %}
+                    <span class="field-error">{{ form.company.errors.0 }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="profile-field profile-notes-field">
+            <label for="id_notes">Notes</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+                <span class="field-error">{{ form.notes.errors.0 }}</span>
+            {% endif %}
+        </div>
+
+        <div class="profile-actions">
+            <button type="submit" class="save-btn">
+                <i class="fa-regular fa-floppy-disk"></i>
+                <span>Save</span>
+            </button>
+        </div>
+    </section>
+</form>
+
+<script>
+    const avatarInput = document.getElementById('avatar-upload');
+    const fileNameEl = document.getElementById('avatar-file-name');
+
+    avatarInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+            fileNameEl.textContent = this.files[0].name;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const preview = document.querySelector('.avatar-preview');
+                preview.innerHTML = '<img src="' + e.target.result + '" alt="Avatar preview" class="avatar-shape avatar-img" id="avatarPreviewImage">';
+            };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            fileNameEl.textContent = 'No file chosen';
+        }
+    });
+</script>
+
 {% endblock %}

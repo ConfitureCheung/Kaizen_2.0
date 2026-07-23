@@ -18,7 +18,13 @@
         </div>
 
         <div class="left-panel-body">
-            <div class="tree-root-label">Profile</div>
+            <div class="tree-root-label">
+                {% if sidebar_profile and sidebar_profile.display_name %}
+                    {{ sidebar_profile.display_name }}
+                {% else %}
+                    {{ request.user.username }}
+                {% endif %}
+            </div>
 
             <div class="tree-section">
                 {% if sidebar_clients %}
@@ -133,6 +139,16 @@
             {% block content %}{% endblock %}
         </section>
     </main>
+
+<!--    {% if messages %}-->
+<!--        <div class="message-stack">-->
+<!--            {% for message in messages %}-->
+<!--                <div class="inline-message inline-message-{{ message.tags }}">-->
+<!--                    {{ message }}-->
+<!--                </div>-->
+<!--            {% endfor %}-->
+<!--        </div>-->
+<!--    {% endif %}-->
 
     <script src="{% static 'js/app.js' %}"></script>
 </body>

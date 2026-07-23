@@ -1,7 +1,11 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
+
 from .models import Client, Building, ClientGroup, BuildingUser
+from accounts.forms import UserProfileForm
+from accounts.models import UserProfile
 
 
 PAGE_LIST = ["Dashboard", "Users", "Groups", "Buildings", "Clients", "Profile"]
@@ -13,11 +17,18 @@ def get_allowed_client_ids(user):
 
 
 
+def get_user_profile_safe(user):
+    if not user.is_authenticated:
+        return None
+    return UserProfile.objects.filter(user=user).first()
+
+
 def get_sidebar_context(user):
     client_ids = get_allowed_client_ids(user)
     clients = Client.objects.filter(id__in=client_ids).prefetch_related("buildings")
     return {
         "sidebar_clients": clients,
+        "sidebar_profile": get_user_profile_safe(user),
     }
 
 
@@ -27,6 +38,7 @@ def dashboard_view(request):
     buildings = Building.objects.filter(client_id__in=client_ids)
     clients = Client.objects.filter(id__in=client_ids)
     return render(request, "dashboard.html", {
+        **get_sidebar_context(request.user),
         "buildings": buildings,
         "clients": clients,
     })
@@ -36,19 +48,27 @@ def dashboard_view(request):
 def users_view(request):
     client_ids = get_allowed_client_ids(request.user)
     users = BuildingUser.objects.filter(client_id__in=client_ids)
-    return render(request, "core/users.html", {"users": users})
+    return render(request, "core/users.html", {
+        **get_sidebar_context(request.user),
+        "users": users
+    })
 
 
 @login_required
 def user_detail_view(request):
-    return render(request, "core/user_detail.html")
+    return render(request, "core/user_detail.html", {
+        **get_sidebar_context(request.user),
+    })
 
 
 @login_required
 def groups_view(request):
     client_ids = get_allowed_client_ids(request.user)
     groups = ClientGroup.objects.filter(client_id__in=client_ids)
-    return render(request, "core/groups.html", {"groups": groups})
+    return render(request, "core/groups.html", {
+        **get_sidebar_context(request.user),
+        "groups": groups
+    })
 
 
 @login_required
@@ -63,6 +83,7 @@ def group_detail_view(request):
     # Guard: no client exists yet — show a friendly warning instead of crashing
     if client is None:
         return render(request, "core/group_detail.html", {
+            **get_sidebar_context(request.user),
             "group": group,
             "page_list": PAGE_LIST,
             "no_client_error": True,
@@ -72,6 +93,7 @@ def group_detail_view(request):
         name = request.POST.get("name", "").strip()
         if not name:
             return render(request, "core/group_detail.html", {
+                **get_sidebar_context(request.user),
                 "group": group,
                 "page_list": PAGE_LIST,
                 "name_error": True,
@@ -86,6 +108,7 @@ def group_detail_view(request):
             return redirect("group_saved", pk=group.pk)
 
     return render(request, "core/group_detail.html", {
+        **get_sidebar_context(request.user),
         "group": group,
         "page_list": PAGE_LIST,
     })
@@ -97,6 +120,7 @@ def group_saved_view(request, pk):
     members = group.users.select_related("auth_user").all()
     created = request.GET.get("created")
     return render(request, "core/group_saved.html", {
+        **get_sidebar_context(request.user),
         "group": group,
         "members": members,
         "created": created,
@@ -116,6 +140,7 @@ def group_members_view(request, pk):
         return redirect("group_saved", pk=group.pk)
 
     return render(request, "core/group_members.html", {
+        **get_sidebar_context(request.user),
         "group": group,
         "all_users": all_users,
         "current_members": current_members,
@@ -135,6 +160,7 @@ def buildings_view(request):
         }
     ]
     return render(request, "core/buildings.html", {
+        **get_sidebar_context(request.user),
         "buildings": sample_buildings,
         "sample_saved_buildings": sample_saved_buildings,
     })
@@ -142,7 +168,9 @@ def buildings_view(request):
 
 @login_required
 def building_detail_view(request):
-    return render(request, "core/building_detail.html")
+    return render(request, "core/building_detail.html", {
+        **get_sidebar_context(request.user),
+    })
 
 
 ''' fake sample data, to use db in next step '''
@@ -159,6 +187,7 @@ def building_report_view(request):
     donut_values = [45, 55]
 
     return render(request, "core/building_report.html", {
+        **get_sidebar_context(request.user),
         "building_name": "Sunshine Building",
         "building_country": "HK",
         "monthly_labels": monthly_labels,
@@ -176,19 +205,49 @@ def clients_view(request):
         clients = Client.objects.all()
     else:
         clients = Client.objects.filter(memberships__user=request.user).distinct()
-    return render(request, "core/clients.html", {"clients": clients})
+    return render(request, "core/clients.html", {
+        **get_sidebar_context(request.user),
+        "clients": clients
+    })
 
 
 @login_required
 def profile_view(request):
-    return render(request, "accounts/profile.html")
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = UserProfileForm(request.POST, instance=profile)
+
+        if form.is_valid():
+            profile = form.save(commit=False)
+
+            if request.FILES.get("avatar"):
+                profile.avatar = request.FILES["avatar"]
+
+            profile.save()
+            messages.success(request, "Profile has been saved successfully.")
+            return redirect("profile")
+
+        messages.error(request, "Please check the form and try again.")
+    else:
+        form = UserProfileForm(instance=profile)
+
+    return render(request, "accounts/profile.html", {
+        **get_sidebar_context(request.user),
+        "form": form,
+        "profile": profile,
+    })
 
 
 @login_required
 def client_detail_view(request):
-    return render(request, "core/client_detail.html")
+    return render(request, "core/client_detail.html", {
+        **get_sidebar_context(request.user),
+    })
 
 
 @login_required
 def client_saved_view(request):
-    return render(request, "core/client_saved.html")
+    return render(request, "core/client_saved.html", {
+        **get_sidebar_context(request.user),
+    })
