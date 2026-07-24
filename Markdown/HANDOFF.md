@@ -2,57 +2,59 @@
 
 ## Current status
 The BLENDY Django project has its main structure in place, including the `accounts` and `core` apps, shared templates, authentication flow, and page routes for dashboard, users, groups, buildings, clients, and profile.
-The Client pages functional work (`clients.html`, `client_detail.html`, `client_saved.html`) has been completed and is no longer the active focus.
-The next implementation stage is the functional part of the **Buildings-related pages**: `buildings.html`, `building_detail.html`, and `building_report.html`.
+The Buildings pages (`buildings.html`, `building_detail.html`, `building_report.html`) are still layout-only or sample-data driven and are **deferred** to a later stage.
+The next active implementation stage is the functional part of the **Groups-related HTML pages**: `groups.html`, `group_detail.html`, `group_saved.html`, and `group_members.html`.
 
 ## What is already done
 - Custom auth model and login/logout flow are set up in the `accounts` app, and authenticated pages use the shared shell in `templates/base.html`.
 - Shared authenticated shell is implemented in `templates/base.html` with breadcrumb bar, page title, top-left hamburger button, icon-based main navigation, and a sliding left panel showing a Client → Building tree.
 - Users pages are functional with `users.html` and `user_detail.html`.
 - Profile page save flow, avatar upload, and Django admin visibility are implemented.
-- Groups area is implemented as a list/detail/member-selection style flow.
 - Clients pages are fully functional: `clients.html` is queryset-backed, `client_detail.html` shows real data with prefetched buildings and groups, and `client_saved.html` handles both create and edit flows with POST save and redirect on success.
 - The sliding left panel in `base.html` renders the Client → Building hierarchy from queryset-backed context and remains consistent after Client write actions.
-- Buildings pages are laid out with list/detail/report screens — but they are currently **layout-only or sample-data driven**.
+- Buildings pages exist as layout-only or sample-data screens; their full functional wiring is deferred.
 
 ## What is not yet done — current target
-The three Buildings-related pages need real backend functionality:
+The four Groups-related HTML pages need review and updates to ensure they are consistent, complete, and ready to wire to backend logic:
 
-- **`buildings.html`** — should list all `Building` records accessible to the logged-in user, grouped or filtered by `Client`. Currently renders with static or placeholder data.
-- **`building_detail.html`** — should display a single building's full details (name, address, client, floors, sensors, etc.) pulled from real querysets, and handle both create and edit flows via POST.
-- **`building_report.html`** — should display a reporting view for a single building, including charts/stats pulled from real queryset data (e.g. energy readings, sensor summaries, or similar time-series data tied to the building).
+- **`groups.html`** — list view of all groups, should show group name, member count, and permissions summary. Currently may be layout-only or partially functional.
+- **`group_detail.html`** — detail/edit form for a single group, including group name, global permissions flags, and per-page permission rows. Should handle both create (no `pk`) and edit (with `pk`) flows.
+- **`group_saved.html`** — confirmation/summary screen after a group is saved, showing group name and a summary of assigned permissions.
+- **`group_members.html`** — member selection screen for a group, showing a list of available users with checkboxes to add or remove them from the group.
 
 ## Important implementation notes
-- Reuse the existing `Building` model in `core/models.py`; do not redesign the data model unless a small nullable field addition is strictly necessary.
+- Reuse the existing `Group` (or custom group) model in `core/models.py`; do not redesign the data model unless a small nullable field addition is strictly necessary.
 - Keep all view logic inside `core/views.py` following the existing `allowed_clients` and queryset-backed patterns already present.
-- Keep styling inside `static/css/app.css` conventions; reuse existing card, form, table, and button patterns.
+- Keep styling inside `static/css/app.css` conventions; reuse existing card, form, table, and button patterns (`.groups-page`, `.group-form`, `.group-perms-table`, `.group-perms-row` etc. are already defined).
 - Keep any interactivity inside `static/js/app.js`; do not introduce page-specific scripts unless unavoidable.
-- The left panel in `base.html` already renders clients and buildings from context — any new building save/delete action should keep that context consistent.
 - Preserve the current project structure, naming style, and minimal-change workflow.
 
 ## Relevant files for the next session
-- `templates/core/buildings.html`
-- `templates/core/building_detail.html`
-- `templates/core/building_report.html`
-- `core/views.py` — add or update `buildings_view`, `building_detail_view`, `building_report_view`
-- `core/urls.py` — verify routes for `buildings`, `building_detail`, `building_report`
-- `core/models.py` — reference `Building` model definition
+- `templates/core/groups.html`
+- `templates/core/group_detail.html`
+- `templates/core/group_saved.html`
+- `templates/core/group_members.html`
+- `core/views.py` — add or update `groups_view`, `group_detail_view`, `group_saved_view`, `group_members_view`
+- `core/urls.py` — verify routes for `groups`, `group_detail`, `group_saved`, `group_members`
+- `core/models.py` — reference existing group/permission model definitions
 - `static/css/app.css` — reuse existing patterns; add only what is missing
-- `static/js/app.js` — add any building-specific interactivity here
+- `static/js/app.js` — add any group-specific interactivity here
 
 ## Next task
-Work on the functional part of the **Buildings pages**: `buildings.html`, `building_detail.html`, and `building_report.html`.
+Work on the **Groups HTML pages**: `groups.html`, `group_detail.html`, `group_saved.html`, and `group_members.html`.
 
 This next step should include:
-- Listing all accessible `Building` records in `buildings.html` with real queryset data, filtered/grouped by client.
-- Displaying a single building's full details in `building_detail.html` with working create and edit form handling (POST save, validation feedback, redirect on success).
-- Rendering a real data-backed report in `building_report.html` with charts or stats tied to the building's sensor or energy data.
-- Wiring Django admin visibility for `Building` records if not already registered.
-- Keeping the left panel context consistent after any create/edit/delete action.
+- Reviewing and updating the four Groups templates so they are consistent with the shared visual language and shell.
+- Ensuring `groups.html` lists all group records with name, member count, and action buttons.
+- Ensuring `group_detail.html` handles both create and edit flows: GET renders the form, POST validates and saves, success redirects to `group_saved`.
+- Ensuring `group_saved.html` shows a success banner, the group's summary info, and a link back to the group list.
+- Ensuring `group_members.html` shows a user-selection table with checkboxes and a save action.
+- Wiring any missing Django admin visibility for group-related models.
+- Keeping the left panel context consistent after any group write action.
 
 ## Constraints for the next edit
-- Focus on Buildings functionality only.
-- Do not refactor unrelated modules (Users, Groups, Clients, Profile).
+- Focus on Groups HTML functionality only.
+- Do not refactor unrelated modules (Users, Buildings, Clients, Profile).
 - Preserve the shared `base.html` shell and left-panel behavior.
 - Keep CSS in `static/css/app.css` and shared interaction logic in `static/js/app.js`.
 - Return complete updated files for affected code when requesting AI help.
@@ -61,17 +63,18 @@ This next step should include:
 Use a prompt in this shape for the next coding session:
 
 ```text
-Current task: build the functional part of the Buildings pages (buildings.html, building_detail.html, building_report.html).
+Current task: update and wire the functional part of the Groups pages (groups.html, group_detail.html, group_saved.html, group_members.html).
 Constraints:
 - keep current Django structure
-- keep existing bulky style
+- keep existing bulk style
 - no unrelated refactor
 - preserve existing shared base.html shell and left panel
-- only touch Buildings-related files unless a small shared CSS/JS/admin/model update is required
+- only touch Groups-related files unless a small shared CSS/JS/admin/model update is required
 Relevant files:
-- templates/core/buildings.html
-- templates/core/building_detail.html
-- templates/core/building_report.html
+- templates/core/groups.html
+- templates/core/group_detail.html
+- templates/core/group_saved.html
+- templates/core/group_members.html
 - core/views.py
 - core/urls.py
 - core/models.py
