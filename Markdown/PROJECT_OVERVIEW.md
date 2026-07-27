@@ -4,57 +4,58 @@
 The BLENDY Django project includes the `accounts` and `core` apps, shared authenticated templates, route wiring for dashboard, users, groups, buildings, clients, and profile, and a common visual system in `static/css/app.css`.
 The project is still intentionally hybrid: some screens are queryset-backed and some remain layout-first or sample-data driven while interface work progresses in stages.
 The shared navigation includes a functioning sliding left panel in `base.html` triggered by the hamburger button, rendering a Client → Building tree from queryset-backed context.
-The Profile page and Client pages are functionally complete. The **next active focus is the Groups-related HTML pages**. Buildings pages are deferred to a later stage.
+The Profile page, Client pages, and Groups pages are functionally complete. The **next active focus is the Users-related HTML pages**: `users.html` and `user_detail.html`. Buildings pages are deferred to a later stage.
 
 ## Existing structure relevant to the next step
 - `templates/base.html` contains the top bar, hamburger button, breadcrumb bar, page title, global icon navigation, and the sliding left panel — all shared across authenticated pages.
 - `core/views.py` already contains helper logic for allowed clients and queryset-backed pages that can be reused to provide shared navigation context.
-- `core/urls.py` already defines the main application page routes, including `groups`, `group_detail`, `group_saved`, and `group_members`.
-- `static/css/app.css` already defines the app’s visual language for cards, forms, banners, tables, buttons, groups pages, and responsive behavior.
-- The data model supports group → user membership: the `Group` (or custom group) model and permission flags already exist in `core/models.py`.
+- `core/urls.py` already defines the main application page routes, including `users` and `user_detail`.
+- `static/css/app.css` already defines the app’s visual language for cards, forms, banners, tables, buttons, and responsive behavior.
+- The data model supports the custom user model in `accounts/models.py`.
 
 ## Completed pages
 | Page area | Pages | Status |
 |---|---|---|
 | Auth | Login / Logout | ✅ Functional |
 | Profile | `profile.html` | ✅ Functional |
-| Users | `users.html`, `user_detail.html` | ✅ Functional |
-| Groups | `groups.html`, `group_detail.html`, `group_saved.html`, `group_members.html` | 🔄 In progress |
+| Users | `users.html`, `user_detail.html` | 🔄 In progress |
+| Groups | `groups.html`, `group_detail.html`, `group_saved.html`, `group_members.html` | ✅ Functional |
 | Clients | `clients.html`, `client_detail.html`, `client_saved.html` | ✅ Functional |
 | Buildings | `buildings.html`, `building_detail.html`, `building_report.html` | 🔲 Layout-only (deferred) |
 | Dashboard | `dashboard.html` | 🔲 Partial / layout |
 
-## Groups pages — current state
-The four Groups screens exist and have CSS classes defined, but may not yet be fully wired to live queryset data:
-- **`groups.html`** — list view, may not yet be queryset-backed.
-- **`group_detail.html`** — detail/form view, may not yet handle POST save or validation feedback.
-- **`group_saved.html`** — confirmation screen after save, may not yet receive real group context.
-- **`group_members.html`** — member-selection screen, may not yet save membership changes.
+## Users pages — current state
+The two Users screens exist and may already have some functional wiring, but need review and updates for consistency and completeness:
+- **`users.html`** — list view of all user accounts; should be queryset-backed showing full name, email, work phone, group badges, and action buttons.
+- **`user_detail.html`** — detail/edit form for a single user; should handle both create (no `pk`) and edit (with `pk`) flows with POST save, validation feedback, and group assignment.
 
-## Groups pages — planned functional behavior
-- `groups_view` should return all `Group` records, ordered consistently, with member count annotations if useful.
-- `group_detail_view` should handle both create (no `pk`) and edit (with `pk`) flows: render the form on GET, validate and save on POST (including permission flags and per-page permission rows), and redirect to `group_saved` on success.
-- `group_saved_view` should return the saved group with its permission summary and a list of current members.
-- `group_members_view` should render all users with checkboxes pre-filled for current members and handle POST to update group membership.
-- Django admin should have the group model registered so records are visible and manageable.
+## Users pages — planned functional behavior
+- `users_view` should return all user records ordered consistently (e.g., by full name), with group membership prefetched for display.
+- `user_detail_view` should handle both create (no `pk`) and edit (with `pk`) flows: render the form on GET, validate and save on POST (including group assignment and active status toggle), and redirect appropriately on success.
+- Django admin should have the custom user model registered so records are visible and manageable.
+
+## Groups pages — completed state
+All four Groups screens are now fully functional:
+- **`groups.html`** — queryset-backed list view with group name, member count, and action buttons.
+- **`group_detail.html`** — handles create and edit flows with POST save, permission flag saving, and redirect to `group_saved`.
+- **`group_saved.html`** — confirmation screen showing real group context (name, permissions, members).
+- **`group_members.html`** — member-selection screen with checkbox table and POST membership update.
 
 ## Buildings pages — deferred state
-The three Buildings screens remain layout-only or sample-data driven. Their functional wiring is intentionally deferred until after the Groups work is complete:
+The three Buildings screens remain layout-only or sample-data driven. Their functional wiring is intentionally deferred until after the Users work is complete:
 - **`buildings.html`** — list view, not yet queryset-backed.
 - **`building_detail.html`** — detail/form view, not yet wired to POST handling or database save logic.
 - **`building_report.html`** — report view, not yet pulling real data or rendering live charts.
 
 ## Files most relevant for the next step
-- `templates/core/groups.html` — group list UI.
-- `templates/core/group_detail.html` — group detail/edit form UI.
-- `templates/core/group_saved.html` — group save confirmation UI.
-- `templates/core/group_members.html` — member selection UI.
-- `core/views.py` — `groups_view`, `group_detail_view`, `group_saved_view`, `group_members_view`.
-- `core/urls.py` — route verification for all four group URLs.
-- `core/models.py` — group and permission model reference.
-- `core/admin.py` — ensure group model is registered.
+- `templates/core/users.html` — user list UI.
+- `templates/core/user_detail.html` — user detail/edit form UI.
+- `core/views.py` — `users_view`, `user_detail_view`.
+- `core/urls.py` — route verification for user URLs.
+- `accounts/models.py` — custom user model reference.
+- `core/admin.py` — ensure custom user model is registered.
 - `static/css/app.css` — reuse existing patterns; add only what is missing.
-- `static/js/app.js` — add any group-specific interactivity.
+- `static/js/app.js` — add any user-specific interactivity.
 
 ## Project guardrails
 - Keep changes targeted.
