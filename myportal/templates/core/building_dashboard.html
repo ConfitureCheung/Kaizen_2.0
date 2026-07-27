@@ -1,0 +1,36 @@
+{% extends "base2.html" %}
+
+{% block title %}Building Dashboard{% endblock %}
+{% block breadcrumb %}{{ selected_client.name }} / {{ selected_building.name }} / Dashboard{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Dashboard{% endblock %}
+
+{% block content %}
+<div class="building-dashboard-placeholder">
+    <div class="building-dashboard-grid">
+        <section class="building-card building-card-tall">
+            <div class="building-card-head">BUILDING PROFILE</div>
+            <div class="building-card-body"></div>
+        </section>
+
+        <section class="building-card building-card-wide">
+            <div class="building-card-head">DASHBOARD</div>
+            <div class="building-card-body"></div>
+        </section>
+
+        <section class="building-card building-card-wide">
+            <div class="building-card-head">INSIGHTS</div>
+            <div class="building-card-body"></div>
+        </section>
+
+        <section class="building-card">
+            <div class="building-card-head">ENERGY BREAKDOWN</div>
+            <div class="building-card-body"></div>
+        </section>
+
+        <section class="building-card">
+            <div class="building-card-head">GREEN FACTS</div>
+            <div class="building-card-body"></div>
+        </section>
+    </div>
+</div>
+{% endblock %}

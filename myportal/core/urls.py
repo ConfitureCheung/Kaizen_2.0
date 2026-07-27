@@ -33,6 +33,10 @@ urlpatterns = [
 
     # ── Profile ──
     path("profile/", views.profile_view, name="profile"),
+
+    path("", views.dashboard_view, name="dashboard"),
+    path("dashboard/", views.dashboard_view, name="dashboard"),
+    path("buildings/<int:building_id>/dashboard/", views.building_dashboard, name="building_dashboard"),
 ]
 
 

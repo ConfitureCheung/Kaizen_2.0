@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BLENDY{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'css/app2.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% include "includes/left_panel.html" %}
+
+    <header class="topbar">
+        <div class="topbar-left">
+            <button id="menuToggle" class="menu-btn" type="button" aria-label="Open menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="topbar-center">
+            <a href="{% url 'dashboard' %}" class="brand-link">
+                <span class="brand-title">BLENDY Analytics</span>
+                <span class="brand-divider">|</span>
+                <span class="brand-logo-box">
+                    <img src="{% static 'img/blendy_icon.png' %}" alt="BLENDY logo" class="brand-logo-img">
+                    <span class="brand-logo-fallback">BLENDY</span>
+                </span>
+            </a>
+        </div>
+
+        <div class="topbar-right">
+            <span class="topbar-user">{{ request.user.username }}</span>
+            <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <div class="breadcrumb-bar">
+        <span class="crumb-brand">BLENDY</span>
+        <span class="crumb-sep">/</span>
+        <span>{% block breadcrumb %}{% endblock %}</span>
+    </div>
+
+    <main class="page-shell building-shell">
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+
+        <nav class="building-tabs" aria-label="Building navigation">
+            <a href="{% url 'building_dashboard' selected_building.pk %}" class="building-tab {% if building_tab == 'dashboard' %}active{% endif %}">
+                <span class="building-tab-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                <span class="building-tab-label">Dashboard</span>
+            </a>
+            <a href="#" class="building-tab">
+                <span class="building-tab-icon"><i class="fa-solid fa-vault"></i></span>
+                <span class="building-tab-label">Vault</span>
+            </a>
+            <a href="#" class="building-tab">
+                <span class="building-tab-icon"><i class="fa-solid fa-circle-info"></i></span>
+                <span class="building-tab-label">Insights</span>
+            </a>
+            <a href="#" class="building-tab">
+                <span class="building-tab-icon"><i class="fa-solid fa-bolt"></i></span>
+                <span class="building-tab-label">Energy</span>
+            </a>
+            <a href="#" class="building-tab">
+                <span class="building-tab-icon"><i class="fa-regular fa-file-lines"></i></span>
+                <span class="building-tab-label">Reports</span>
+            </a>
+            <a href="#" class="building-tab">
+                <span class="building-tab-icon"><i class="fa-solid fa-chart-column"></i></span>
+                <span class="building-tab-label">Charts</span>
+            </a>
+            <a href="#" class="building-tab">
+                <span class="building-tab-icon"><i class="fa-solid fa-gears"></i></span>
+                <span class="building-tab-label">Systems</span>
+            </a>
+            <a href="#" class="building-tab">
+                <span class="building-tab-icon"><i class="fa-solid fa-gear"></i></span>
+                <span class="building-tab-label">Settings</span>
+            </a>
+        </nav>
+
+        <section class="building-page-content">
+            {% block content %}{% endblock %}
+        </section>
+    </main>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

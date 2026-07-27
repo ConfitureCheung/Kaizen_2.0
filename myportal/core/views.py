@@ -11,11 +11,15 @@ from django.views.decorators.http import require_POST
 from django.db.models.deletion import ProtectedError
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
+from django.core.exceptions import PermissionDenied
 
 from .models import Client, Building, ClientGroup, BuildingUser, BuildingDatabase
 from .models import COUNTRY_CHOICES, PARTNERSHIP_CHOICES, CURRENCY_CHOICES, TIMEZONE_CHOICES, BUILDING_TYPE_CHOICES, AREA_UNIT_CHOICES, WEATHER_UNIT_CHOICES
 from accounts.forms import UserProfileForm
 from accounts.models import UserProfile
+
+# from .views import get_sidebar_context, get_allowed_client_ids, get_allowed_client_ids, get_sidebar_context
+from .sidebar import get_allowed_client_ids, get_sidebar_context
 
 
 WEATHER_API_KEY = "e9877c4893e043fd8f632826262003"
@@ -23,49 +27,41 @@ GOOGLE_MAPS_API_KEY = "AIzaSyCwvTyOK-c-n0aO80xVtGfVejLuZRtb5Q0"
 
 PAGE_LIST = ["Dashboard", "Users", "Groups", "Buildings", "Clients", "Profile"]
 
-def get_allowed_client_ids(user):
-    if user.is_superuser or user.is_staff or user.is_provider:
-        return Client.objects.values_list("id", flat=True)
-    return user.client_memberships.filter(is_active=True).values_list("client_id", flat=True)
-
-
-
-def get_user_profile_safe(user):
-    if not user.is_authenticated:
-        return None
-    return UserProfile.objects.filter(user=user).first()
-
-
-def get_sidebar_context(user):
-    client_ids = get_allowed_client_ids(user)
-    clients = Client.objects.filter(id__in=client_ids).prefetch_related("buildings")
-    return {
-        "sidebar_clients": clients,
-        "sidebar_profile": get_user_profile_safe(user),
-    }
-
 
 @login_required
 def dashboard_view(request):
     client_ids = get_allowed_client_ids(request.user)
-    clients = Client.objects.filter(id__in=client_ids).prefetch_related("buildings")
+
+    selected_client_id = request.GET.get("client")
+    selected_client = None
+
+    if selected_client_id:
+        try:
+            selected_client_id = int(selected_client_id)
+        except (TypeError, ValueError):
+            raise PermissionDenied
+
+        if selected_client_id not in client_ids:
+            raise PermissionDenied
+
+        clients = Client.objects.filter(id=selected_client_id).prefetch_related("buildings")
+        selected_client = clients.first()
+    else:
+        clients = Client.objects.filter(id__in=client_ids).prefetch_related("buildings")
+        selected_client = clients.order_by("pk").first()
 
     # ── 1. Building Location: 1st building created per client ──────────────────
-    # "First created" = lowest pk (auto-incremented), consistent with created_at ordering
     first_buildings = []
     for client in clients:
         first_b = client.buildings.order_by("pk").first()
         if first_b:
             first_buildings.append(first_b)
 
-    # Pick the single building to centre the map on (first client's first building)
     map_building = first_buildings[0] if first_buildings else None
 
     # ── 2. Data Collection Device Status ──────────────────────────────────────
-    # One row per building that has a building_database selected.
-    # Connected = the db_file exists on disk and can be opened.
     all_buildings = Building.objects.filter(
-        client_id__in=client_ids
+        client_id__in=clients.values_list("id", flat=True)
     ).select_related("building_database").order_by("pk")
 
     device_status_rows = []
@@ -74,7 +70,7 @@ def dashboard_view(request):
     for building in all_buildings:
         db = building.building_database
         if not db:
-            continue  # skip buildings with no DB selected
+            continue
 
         connected = False
         try:
@@ -97,13 +93,12 @@ def dashboard_view(request):
         })
 
     # ── 3. Building Reports Count ──────────────────────────────────────────────
-    # Count reports per building from each building's SQLite DB.
-    # "Reports" = rows in the `report` table (adjust table name if yours differs).
     building_report_counts = []
     for building in all_buildings:
         db = building.building_database
         if not db:
             continue
+
         count = 0
         try:
             conn = sqlite3.connect(db.db_file.path)
@@ -113,6 +108,7 @@ def dashboard_view(request):
             conn.close()
         except Exception:
             count = 0
+
         if count > 0 or building.building_database:
             building_report_counts.append({
                 "building": building,
@@ -125,10 +121,10 @@ def dashboard_view(request):
         db = building.building_database
         if not db:
             continue
+
         try:
             conn = sqlite3.connect(db.db_file.path)
             cur = conn.cursor()
-            # Try common column names; adjust if your schema differs
             cur.execute("""
                 SELECT name, datetime
                 FROM report
@@ -145,13 +141,16 @@ def dashboard_view(request):
         except Exception:
             pass
 
-    # Sort combined list and take top 5
-    latest_reports.sort(key=lambda r: r["datetime"] if r["datetime"] else "", reverse=True)
+    latest_reports.sort(
+        key=lambda r: r["datetime"] if r["datetime"] else "",
+        reverse=True
+    )
     latest_reports = latest_reports[:5]
 
     return render(request, "dashboard.html", {
         **get_sidebar_context(request.user),
         "clients": clients,
+        "selected_client": selected_client,
         "map_building": map_building,
         "first_buildings": first_buildings,
         "google_maps_api_key": GOOGLE_MAPS_API_KEY,
@@ -442,7 +441,6 @@ def group_delete_view(request, pk):
 
 
 def _building_form_context(user, building=None, errors=None):
-    from .views import get_sidebar_context, get_allowed_client_ids
     clients = Client.objects.filter(id__in=get_allowed_client_ids(user))
     return {
         **get_sidebar_context(user),
@@ -462,7 +460,6 @@ def _building_form_context(user, building=None, errors=None):
 
 @login_required
 def buildings_view(request):
-    from .views import get_allowed_client_ids, get_sidebar_context
     buildings = Building.objects.filter(
         client_id__in=get_allowed_client_ids(request.user)
     ).select_related("client")
@@ -575,7 +572,6 @@ def building_detail_view(request, pk=None):
 
 @login_required
 def building_saved_view(request, pk):
-    from .views import get_sidebar_context
     building = get_object_or_404(Building, pk=pk)
     return render(request, "core/building_saved.html", {
         **get_sidebar_context(request.user),
@@ -595,7 +591,6 @@ def building_delete_view(request, pk):
 
 @login_required
 def building_report_view(request, pk):
-    from .views import get_sidebar_context
     building = get_object_or_404(Building, pk=pk)
 
     weather_data = None
@@ -808,3 +803,75 @@ def profile_view(request):
         "profile": profile,
     })
 
+
+def _is_profile_side_user(user):
+    if not user.is_authenticated:
+        return False
+
+    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        return True
+
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return False
+
+    role = getattr(profile, "role", None)
+    user_type = getattr(profile, "user_type", None)
+    account_type = getattr(profile, "account_type", None)
+    side = getattr(profile, "side", None)
+
+    return (
+        role in ["Profile", "profile", "admin", "internal"] or
+        user_type in ["Profile", "profile", "admin", "internal"] or
+        account_type in ["Profile", "profile", "admin", "internal"] or
+        side in ["Profile", "profile", "admin", "internal"]
+    )
+
+
+def _get_user_client(user):
+    profile = getattr(user, "profile", None)
+    if not profile:
+        return None
+
+    if hasattr(profile, "client") and profile.client:
+        return profile.client
+
+    if hasattr(profile, "client_id") and profile.client_id:
+        return Client.objects.filter(pk=profile.client_id).first()
+
+    return None
+
+
+def _user_can_access_client(user, client):
+    if _is_profile_side_user(user):
+        return True
+
+    user_client = _get_user_client(user)
+    return bool(user_client and user_client.pk == client.pk)
+
+
+def _user_can_access_building(user, building):
+    client = getattr(building, "client", None)
+    if not client:
+        return False
+    return _user_can_access_client(user, client)
+
+
+@login_required
+def building_dashboard(request, building_id):
+    client_ids = get_allowed_client_ids(request.user)
+
+    building = get_object_or_404(
+        Building.objects.select_related("client"),
+        pk=building_id
+    )
+
+    if building.client_id not in client_ids:
+        raise PermissionDenied
+
+    return render(request, "core/building_dashboard.html", {
+        **get_sidebar_context(request.user),
+        "selected_building": building,
+        "selected_client": building.client,
+        "building_tab": "dashboard",
+    })
