@@ -77,6 +77,8 @@ DB_ENGINE_CHOICES = [
     ("sqlite", "SQLite"),
 ]
 
+PAGE_PERM_FIELDS = ["dashboard", "users", "groups", "buildings", "clients", "profile"]
+
 
 class Client(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -133,9 +135,29 @@ class ClientMembership(models.Model):
 
 
 class ClientGroup(models.Model):
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="groups")
-    name = models.CharField(max_length=255)
+    client      = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="groups")
+    name        = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+
+    # Global toggles
+    can_read  = models.BooleanField(default=True)
+    can_write = models.BooleanField(default=False)
+
+    # Per-page read
+    read_dashboard = models.BooleanField(default=True)
+    read_users     = models.BooleanField(default=True)
+    read_groups    = models.BooleanField(default=True)
+    read_buildings = models.BooleanField(default=True)
+    read_clients   = models.BooleanField(default=True)
+    read_profile   = models.BooleanField(default=True)
+
+    # Per-page write
+    write_dashboard = models.BooleanField(default=False)
+    write_users     = models.BooleanField(default=False)
+    write_groups    = models.BooleanField(default=False)
+    write_buildings = models.BooleanField(default=False)
+    write_clients   = models.BooleanField(default=False)
+    write_profile   = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("client", "name")
@@ -143,6 +165,17 @@ class ClientGroup(models.Model):
 
     def __str__(self):
         return f"{self.client.name} / {self.name}"
+
+    def get_page_permissions(self):
+        pages = ["Dashboard", "Users", "Groups", "Buildings", "Clients", "Profile"]
+        return [
+            {
+                "page":      p,
+                "can_read":  getattr(self, f"read_{p.lower()}"),
+                "can_write": getattr(self, f"write_{p.lower()}"),
+            }
+            for p in pages
+        ]
 
 
 class BuildingDatabase(models.Model):

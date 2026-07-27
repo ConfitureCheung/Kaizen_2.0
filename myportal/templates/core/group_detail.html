@@ -1,18 +1,16 @@
 {% extends "base.html" %}
-
 {% block title %}{% if group %}Edit Group{% else %}Add Group{% endif %}{% endblock %}
 {% block breadcrumb %}Groups / {% if group %}{{ group.name }}{% else %}Add{% endif %}{% endblock %}
 {% block page_title %}BLENDY : {% if group %}Edit Group{% else %}Add Group{% endif %}{% endblock %}
 
 {% block content %}
 <div class="group-detail-page">
+
     {% if no_client_error %}
     <div class="alert-warn-banner">
         <span>
             <i class="fa-solid fa-triangle-exclamation"></i>
-            No client found. Please
-            <a href="{% url 'client_detail' %}">create a client</a>
-            before adding a group.
+            No client found. Please <a href="{% url 'client_detail' %}">create a client</a> before adding a group.
         </span>
     </div>
     {% endif %}
@@ -28,13 +26,16 @@
 
     <form class="group-form" method="post" action="">
         {% csrf_token %}
+        {% if group %}<input type="hidden" name="pk" value="{{ group.pk }}">{% endif %}
 
         <div class="content-card group-form-card">
             <div class="section-head">Basic Info</div>
             <div class="group-form-body">
                 <div class="form-field">
-                    <label for="group_name">Name</label>
-                    <input type="text" id="group_name" name="name" value="{{ group.name|default:'' }}">
+                    <label for="group_name">Name <span style="color:#dc3545;">*</span></label>
+                    <input type="text" id="group_name" name="name"
+                           value="{{ group.name|default:'' }}"
+                           placeholder="Enter group name" required>
                 </div>
             </div>
         </div>
@@ -43,11 +44,13 @@
             <div class="section-head">Apply to all pages</div>
             <div class="group-form-body group-global-perms">
                 <label class="check-row">
-                    <input type="checkbox" name="can_read_all" id="can_read_all" {% if not group or group.can_read %}checked{% endif %}>
+                    <input type="checkbox" name="can_read_all" id="can_read_all"
+                           {% if not group or group.can_read %}checked{% endif %}>
                     Can read
                 </label>
                 <label class="check-row">
-                    <input type="checkbox" name="can_write_all" id="can_write_all">
+                    <input type="checkbox" name="can_write_all" id="can_write_all"
+                           {% if group and group.can_write %}checked{% endif %}>
                     Can write
                 </label>
             </div>
@@ -69,10 +72,25 @@
                         <tr>
                             <td>{{ page_name }}</td>
                             <td>
-                                <input type="checkbox" name="read_{{ page_name|lower }}" checked>
+                                <input type="checkbox" name="read_{{ page_name|lower }}"
+                                    {% if not group %}checked
+                                    {% elif page_name == "Dashboard" and group.read_dashboard %}checked
+                                    {% elif page_name == "Users" and group.read_users %}checked
+                                    {% elif page_name == "Groups" and group.read_groups %}checked
+                                    {% elif page_name == "Buildings" and group.read_buildings %}checked
+                                    {% elif page_name == "Clients" and group.read_clients %}checked
+                                    {% elif page_name == "Profile" and group.read_profile %}checked
+                                    {% endif %}>
                             </td>
                             <td>
-                                <input type="checkbox" name="write_{{ page_name|lower }}">
+                                <input type="checkbox" name="write_{{ page_name|lower }}"
+                                    {% if page_name == "Dashboard" and group.write_dashboard %}checked
+                                    {% elif page_name == "Users" and group.write_users %}checked
+                                    {% elif page_name == "Groups" and group.write_groups %}checked
+                                    {% elif page_name == "Buildings" and group.write_buildings %}checked
+                                    {% elif page_name == "Clients" and group.write_clients %}checked
+                                    {% elif page_name == "Profile" and group.write_profile %}checked
+                                    {% endif %}>
                             </td>
                         </tr>
                         {% endfor %}
@@ -90,4 +108,13 @@
         </div>
     </form>
 </div>
+
+<script>
+document.getElementById('can_read_all').addEventListener('change', function() {
+    document.querySelectorAll('[name^="read_"]').forEach(cb => cb.checked = this.checked);
+});
+document.getElementById('can_write_all').addEventListener('change', function() {
+    document.querySelectorAll('[name^="write_"]').forEach(cb => cb.checked = this.checked);
+});
+</script>
 {% endblock %}

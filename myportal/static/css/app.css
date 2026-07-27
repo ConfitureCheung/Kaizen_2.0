@@ -1496,6 +1496,31 @@ User Related Pages
 /* =========================
    Groups pages
    ========================= */
+.group-saved-page .page-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.group-saved-page .page-actions .secondary-btn,
+.group-saved-page .page-actions .primary-action-btn {
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    line-height: 40px;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+.group-saved-page .page-actions .secondary-btn i,
+.group-saved-page .page-actions .primary-action-btn i {
+    font-size: 14px;
+    line-height: 1;
+}
+
 .groups-page {
     display: grid;
     gap: 14px;

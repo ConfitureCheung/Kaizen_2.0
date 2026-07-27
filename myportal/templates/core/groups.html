@@ -1,17 +1,26 @@
 {% extends "base.html" %}
-
 {% block title %}Groups{% endblock %}
 {% block breadcrumb %}Groups{% endblock %}
 {% block page_title %}BLENDY : Groups{% endblock %}
 
 {% block content %}
 <div class="groups-page">
+
+    {% if deleted_name %}
+    <div class="alert-success-banner" id="delete-banner">
+        <span>Group "<strong>{{ deleted_name }}</strong>" has been deleted.</span>
+        <button class="alert-close" onclick="this.closest('.alert-success-banner').remove()" aria-label="Dismiss">×</button>
+    </div>
+    {% endif %}
+
     <div class="page-actions">
-        <a href="{% url 'group_detail' %}" class="primary-action-btn">Add group</a>
+        <a href="{% url 'group_detail' %}" class="primary-action-btn">
+            <i class="fa-solid fa-plus"></i>&nbsp; Add group
+        </a>
     </div>
 
     <div class="content-card groups-table-card">
-        <table class="groups-table">
+        <table class="buildings-table">
             <thead>
                 <tr>
                     <th>Name</th>
@@ -20,31 +29,76 @@
                 </tr>
             </thead>
             <tbody>
-                {% if groups %}
-                    {% for group in groups %}
-                    <tr>
-                        <td>{{ group.name }}</td>
-                        <td>{{ group.users.count }}</td>
-                        <td class="table-actions">
-                            <a href="{% url 'group_saved' group.pk %}" class="icon-btn icon-btn-neutral" aria-label="View group">
-                                <i class="fa-regular fa-eye"></i>
-                            </a>
-                            <a href="{% url 'group_detail' %}?pk={{ group.pk }}" class="icon-btn icon-btn-neutral" aria-label="Edit group">
-                                <i class="fa-solid fa-pencil"></i>
-                            </a>
-                            <button type="button" class="icon-btn icon-btn-danger" aria-label="Delete group">
-                                <i class="fa-regular fa-trash-can"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="3" class="empty-table-message">No data to display</td>
-                    </tr>
-                {% endif %}
+                {% for group in groups %}
+                <tr id="group-row-{{ group.pk }}">
+                    <td>{{ group.name }}</td>
+                    <td>{{ group.users.count }}</td>
+                    <td class="table-actions">
+                        <a href="{% url 'group_saved' group.pk %}"
+                           class="icon-btn icon-btn-neutral" aria-label="View group">
+                            <i class="fa-regular fa-eye"></i>
+                        </a>
+                        <a href="{% url 'group_detail' %}?pk={{ group.pk }}"
+                           class="icon-btn icon-btn-neutral" aria-label="Edit group">
+                            <i class="fa-solid fa-pencil"></i>
+                        </a>
+                        <button type="button"
+                                class="icon-btn icon-btn-danger"
+                                aria-label="Delete group"
+                                data-delete-name="{{ group.name }}"
+                                data-delete-url="{% url 'group_delete' group.pk %}"
+                                onclick="confirmDelete(this)">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-table-message">No groups yet. Click "Add group" to create one.</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Delete confirmation modal -->
+<div id="delete-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+        <h3 id="modal-title" class="modal-title">Delete Group</h3>
+        <p class="modal-body">Are you sure you want to delete <strong id="modal-group-name"></strong>? This action cannot be undone.</p>
+        <form id="delete-form" method="post" action="">
+            {% csrf_token %}
+            <div class="modal-actions">
+                <button type="submit" class="btn-danger-confirm">Yes, delete</button>
+                <button type="button" class="btn-cancel-modal" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal-overlay{position:fixed;inset:0;background:rgba(24,29,36,.45);z-index:2000;display:flex;align-items:center;justify-content:center}
+.modal-box{background:#fff;border-radius:10px;padding:28px 28px 22px;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal-title{margin:0 0 10px;font-size:17px;color:#2f3136}
+.modal-body{margin:0 0 20px;font-size:14px;color:#555;line-height:1.5}
+.modal-actions{display:flex;gap:10px}
+.btn-danger-confirm{height:38px;padding:0 18px;background:#dc3545;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}
+.btn-danger-confirm:hover{background:#c82333}
+.btn-cancel-modal{height:38px;padding:0 18px;background:#f2f2f3;color:#555;border:1px solid #bfc4cb;border-radius:6px;font-size:14px;cursor:pointer}
+</style>
+
+<script>
+function confirmDelete(btn) {
+    document.getElementById('modal-group-name').textContent = btn.dataset.deleteName;
+    document.getElementById('delete-form').action = btn.dataset.deleteUrl;
+    document.getElementById('delete-modal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('delete-modal').style.display = 'none';
+}
+document.getElementById('delete-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
 {% endblock %}

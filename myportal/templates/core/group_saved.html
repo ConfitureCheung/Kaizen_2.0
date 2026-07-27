@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block title %}Group - {{ group.name }}{% endblock %}
 {% block breadcrumb %}Groups / {{ group.name }}{% endblock %}
 {% block page_title %}BLENDY : Group - {{ group.name }}{% endblock %}
@@ -9,53 +8,92 @@
 
     {% if created %}
     <div class="alert-success-banner" id="successBanner">
-        <span>Group created successfully.</span>
-        <button class="alert-close" aria-label="Dismiss" onclick="document.getElementById('successBanner').remove()">&#x2715;</button>
+        <span>Group "<strong>{{ group.name }}</strong>" created successfully.</span>
+        <button class="alert-close" aria-label="Dismiss"
+                onclick="document.getElementById('successBanner').remove()">&#x2715;</button>
     </div>
     {% endif %}
 
     <div class="page-actions">
-        <a href="{% url 'group_members' group.pk %}" class="secondary-btn">Select members</a>
-        <a href="{% url 'group_detail' %}?pk={{ group.pk }}" class="primary-action-btn">Edit group</a>
+        <a href="{% url 'group_members' group.pk %}" class="secondary-btn">
+            <i class="fa-solid fa-users"></i>
+            <span>Select members</span>
+        </a>
+        <a href="{% url 'group_detail' %}?pk={{ group.pk }}" class="primary-action-btn">
+            <i class="fa-solid fa-pencil"></i>
+            <span>Edit group</span>
+        </a>
     </div>
 
+    <!-- Permissions -->
     <div class="content-card group-info-card">
         <div class="section-head">Permissions</div>
-        <div class="group-perms-row">
-            <span>Can read: <strong>Yes</strong></span>
-            <span>Can write: <strong>No</strong></span>
+        <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <span class="perm-badge {% if group.can_read %}perm-on{% else %}perm-off{% endif %}">
+                <i class="fa-solid {% if group.can_read %}fa-check{% else %}fa-xmark{% endif %}"></i>
+                Can read (global)
+            </span>
+            <span class="perm-badge {% if group.can_write %}perm-on{% else %}perm-off{% endif %}">
+                <i class="fa-solid {% if group.can_write %}fa-check{% else %}fa-xmark{% endif %}"></i>
+                Can write (global)
+            </span>
         </div>
+        <table class="group-perms-table">
+            <thead>
+                <tr><th>Page</th><th>Can read</th><th>Can write</th></tr>
+            </thead>
+            <tbody>
+                {% for perm in page_permissions %}
+                <tr>
+                    <td>{{ perm.page }}</td>
+                    <td><span class="perm-dot {% if perm.can_read %}perm-dot-on{% else %}perm-dot-off{% endif %}">{% if perm.can_read %}Yes{% else %}No{% endif %}</span></td>
+                    <td><span class="perm-dot {% if perm.can_write %}perm-dot-on{% else %}perm-dot-off{% endif %}">{% if perm.can_write %}Yes{% else %}No{% endif %}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
+    <!-- Members -->
     <div class="content-card group-members-card">
-        <div class="section-head">Members</div>
-        <table class="groups-table">
+        <div class="section-head">
+            Members
+            <span class="member-count-badge">{{ members.count }}</span>
+        </div>
+        <table class="buildings-table">
             <thead>
                 <tr>
-                    <th>First name</th>
-                    <th>Last name</th>
+                    <th>Full name</th>
                     <th>Work phone</th>
                     <th>Email</th>
                 </tr>
             </thead>
             <tbody>
-                {% if members %}
-                    {% for member in members %}
-                    <tr>
-                        <td>{{ member.auth_user.first_name|default:"" }}</td>
-                        <td>{{ member.auth_user.last_name|default:"" }}</td>
-                        <td>{{ member.phone|default:"" }}</td>
-                        <td>{{ member.email|default:"" }}</td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="4" class="empty-table-message">No members assigned</td>
-                    </tr>
-                {% endif %}
+                {% for member in members %}
+                <tr>
+                    <td>{{ member.full_name|default:"—" }}</td>
+                    <td>{{ member.phone|default:"—" }}</td>
+                    <td>{{ member.email|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-table-message">
+                        No members assigned yet.
+                        <a href="{% url 'group_members' group.pk %}">Select members →</a>
+                    </td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
-
 </div>
+
+<style>
+.perm-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:13px}
+.perm-on{background:#d4edda;color:#155724}
+.perm-off{background:#f8d7da;color:#721c24}
+.perm-dot-on{color:#155724;font-weight:500}
+.perm-dot-off{color:#6c757d}
+.member-count-badge{display:inline-block;background:#0d6efd;color:#fff;border-radius:12px;padding:1px 9px;font-size:12px;margin-left:8px;vertical-align:middle}
+</style>
 {% endblock %}

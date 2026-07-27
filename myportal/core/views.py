@@ -76,9 +76,11 @@ def user_detail_view(request):
 def groups_view(request):
     client_ids = get_allowed_client_ids(request.user)
     groups = ClientGroup.objects.filter(client_id__in=client_ids)
+    deleted_name = request.session.pop("group_deleted_name", None)
     return render(request, "core/groups.html", {
         **get_sidebar_context(request.user),
-        "groups": groups
+        "groups": groups,
+        "deleted_name": deleted_name,
     })
 
 
@@ -87,11 +89,9 @@ def group_detail_view(request):
     pk = request.GET.get("pk") or request.POST.get("pk")
     group = get_object_or_404(ClientGroup, pk=pk) if pk else None
 
-    # Resolve the client this user can write to
     client_ids = get_allowed_client_ids(request.user)
     client = Client.objects.filter(id__in=client_ids).first()
 
-    # Guard: no client exists yet — show a friendly warning instead of crashing
     if client is None:
         return render(request, "core/group_detail.html", {
             **get_sidebar_context(request.user),
@@ -110,11 +110,21 @@ def group_detail_view(request):
                 "name_error": True,
             })
 
+        perm_fields = {}
+        for page in PAGE_LIST:
+            key = page.lower()
+            perm_fields[f"read_{key}"]  = bool(request.POST.get(f"read_{key}"))
+            perm_fields[f"write_{key}"] = bool(request.POST.get(f"write_{key}"))
+        perm_fields["can_read"]  = bool(request.POST.get("can_read_all"))
+        perm_fields["can_write"] = bool(request.POST.get("can_write_all"))
+
         if not group:
-            group = ClientGroup.objects.create(client=client, name=name)
+            group = ClientGroup.objects.create(client=client, name=name, **perm_fields)
             return redirect(reverse("group_saved", args=[group.pk]) + "?created=1")
         else:
             group.name = name
+            for k, v in perm_fields.items():
+                setattr(group, k, v)
             group.save()
             return redirect("group_saved", pk=group.pk)
 
@@ -134,6 +144,7 @@ def group_saved_view(request, pk):
         **get_sidebar_context(request.user),
         "group": group,
         "members": members,
+        "page_permissions": group.get_page_permissions(),
         "created": created,
     })
 
@@ -142,20 +153,46 @@ def group_saved_view(request, pk):
 def group_members_view(request, pk):
     group = get_object_or_404(ClientGroup, pk=pk)
     client_ids = get_allowed_client_ids(request.user)
-    all_users = BuildingUser.objects.filter(client_id__in=client_ids)
-    current_members = group.users.all()
+
+    # IDs of users already assigned to a DIFFERENT group
+    other_group_user_ids = set(
+        BuildingUser.objects
+        .filter(client_id__in=client_ids)
+        .exclude(groups__isnull=True)
+        .exclude(groups=group)
+        .values_list("pk", flat=True)
+    )
+
+    all_users = BuildingUser.objects.filter(client_id__in=client_ids).prefetch_related("groups")
+    current_member_ids = set(group.users.values_list("pk", flat=True))
+
+    users_with_flags = []
+    for u in all_users:
+        users_with_flags.append({
+            "user":             u,
+            "is_current_member": u.pk in current_member_ids,
+            "taken_by_other":   u.pk in other_group_user_ids,
+        })
 
     if request.method == "POST":
         selected_ids = request.POST.getlist("members")
         group.users.set(BuildingUser.objects.filter(pk__in=selected_ids))
-        return redirect("group_saved", pk=group.pk)
+        return redirect("groups")
 
     return render(request, "core/group_members.html", {
         **get_sidebar_context(request.user),
         "group": group,
-        "all_users": all_users,
-        "current_members": current_members,
+        "users_with_flags": users_with_flags,
     })
+
+
+@login_required
+@require_POST
+def group_delete_view(request, pk):
+    group = get_object_or_404(ClientGroup, pk=pk)
+    request.session["group_deleted_name"] = group.name
+    group.delete()
+    return redirect("groups")
 
 
 def _building_form_context(user, building=None, errors=None):
@@ -309,8 +346,6 @@ def building_delete_view(request, pk):
     building.delete()
     return redirect("buildings")
 
-
-import sqlite3
 
 @login_required
 def building_report_view(request, pk):

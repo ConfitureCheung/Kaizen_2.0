@@ -9,6 +9,7 @@ urlpatterns = [
     path("groups/add/", views.group_detail_view, name="group_detail"),
     path("groups/<int:pk>/", views.group_saved_view, name="group_saved"),
     path("groups/<int:pk>/members/", views.group_members_view, name="group_members"),
+    path("groups/<int:pk>/delete/", views.group_delete_view, name="group_delete"),
 
     path("buildings/", views.buildings_view, name="buildings"),
     path("buildings/add/", views.building_detail_view, name="building_detail"),
