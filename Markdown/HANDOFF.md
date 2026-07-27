@@ -3,8 +3,9 @@
 ## Current status
 The BLENDY Django project has its main structure in place, including the `accounts` and `core` apps, shared templates, authentication flow, and page routes for dashboard, users, groups, buildings, clients, and profile.
 The Buildings pages (`buildings.html`, `building_detail.html`, `building_report.html`) are still layout-only or sample-data driven and are **deferred** to a later stage.
-The Groups pages (`groups.html`, `group_detail.html`, `group_saved.html`, `group_members.html`) are now **complete** — all four screens are queryset-backed, wired to real backend logic, and consistent with the shared BLENDY visual language.
-The next active implementation stage is the functional review and update of the **Users-related HTML pages**: `users.html` and `user_detail.html`.
+The Groups pages (`groups.html`, `group_detail.html`, `group_saved.html`, `group_members.html`) are **complete** — all four screens are queryset-backed, wired to real backend logic, and consistent with the shared BLENDY visual language.
+The Users pages (`users.html`, `user_detail.html`) are now **complete** — both screens are queryset-backed, wired to real backend logic (create, edit, group assignment, activate/deactivate), and consistent with the shared visual language.
+The next active implementation stage is the **functional review and update of `dashboard.html`**.
 
 ## What is already done
 - Custom auth model and login/logout flow are set up in the `accounts` app, and authenticated pages use the shared shell in `templates/base.html`.
@@ -14,15 +15,20 @@ The next active implementation stage is the functional review and update of the 
 - Clients pages are fully functional: `clients.html` is queryset-backed, `client_detail.html` shows real data with prefetched buildings and groups, and `client_saved.html` handles both create and edit flows with POST save and redirect on success.
 - The sliding left panel in `base.html` renders the Client → Building hierarchy from queryset-backed context and remains consistent after write actions.
 - Buildings pages exist as layout-only or sample-data screens; their full functional wiring is deferred.
+- Users pages are fully functional: `users.html` is queryset-backed showing full name, email, work phone, group badges, and action buttons; `user_detail.html` handles both create and edit flows with POST save, validation feedback, group assignment, and activate/deactivate toggling. Django admin registration for the custom user model is in place.
 
 ## What is not yet done — current target
-The two Users-related HTML pages need review and updates to ensure they are consistent, complete, and ready (or already wired) to backend logic:
+`dashboard.html` needs a full functional review and update. The page currently exists as a partial layout or sample-data screen and needs to be connected to real queryset-backed data and live summary logic.
 
-- **`users.html`** — list view of all user accounts, should show full name, email, work phone, group membership, and action buttons (edit, deactivate/activate). May already be partially functional but needs review for consistency and completeness.
-- **`user_detail.html`** — detail/edit form for a single user, including profile fields, group assignment, and active status toggle. Should handle both create (no `pk`) and edit (with `pk`) flows.
+Planned functional behaviour for the dashboard includes:
+- **Summary KPI cards** — total counts for active users, clients, buildings, and groups pulled from live querysets.
+- **Recent activity feed** — a short list of the most recently created or updated records across key models.
+- **Client → Building overview** — a summary table or card list showing clients with their building counts, consistent with the left panel hierarchy.
+- **Insight/alert strip** — surface any flagged conditions (e.g. users with no group, buildings with no client assignment) as actionable inline notices.
+- **Charts (if applicable)** — data visualisations such as insight counts by building or user activity trends, using the existing chart library already referenced in the project.
 
 ## Important implementation notes
-- Reuse the existing custom user model in `accounts/models.py`; do not redesign the data model unless a small nullable field addition is strictly necessary.
+- Reuse the existing custom user model in `accounts/models.py`; do not redesign the data model.
 - Keep all view logic inside `core/views.py` following the existing `allowed_clients` and queryset-backed patterns already present.
 - Keep styling inside `static/css/app.css` conventions; reuse existing card, form, table, and button patterns already defined.
 - Keep any interactivity inside `static/js/app.js`; do not introduce page-specific scripts unless unavoidable.
@@ -30,28 +36,26 @@ The two Users-related HTML pages need review and updates to ensure they are cons
 - The left panel in `base.html` depends on `sidebar_clients` and `sidebar_profile` context keys — these must continue to be supplied by every authenticated view's context.
 
 ## Relevant files for the next session
-- `templates/core/users.html`
-- `templates/core/user_detail.html`
-- `core/views.py` — add or update `users_view`, `user_detail_view`
-- `core/urls.py` — verify routes for `users`, `user_detail`
-- `accounts/models.py` — reference existing user model definitions
-- `static/css/app.css` — reuse existing patterns; add only what is missing
-- `static/js/app.js` — add any user-specific interactivity here
+- `templates/core/dashboard.html`
+- `core/views.py` — update `dashboard_view` to supply real queryset context
+- `core/urls.py` — verify route for `dashboard`
+- `static/css/app.css` — add only what is missing for dashboard-specific layout
+- `static/js/app.js` — add chart initialisation or dashboard interactivity if needed
 
 ## Next task
-Work on the **Users HTML pages**: `users.html` and `user_detail.html`.
+Work on the **functional aspect of `dashboard.html`**.
 
 This next step should include:
-- Reviewing and updating the two Users templates so they are consistent with the shared visual language and shell.
-- Ensuring `users.html` lists all user records with full name, email, phone, group badges, and action buttons.
-- Ensuring `user_detail.html` handles both create and edit flows: GET renders the form, POST validates and saves, success redirects appropriately.
-- Wiring any missing Django admin visibility for user-related models.
-- Keeping the left panel context consistent after any user write action.
+- Reviewing the current `dashboard.html` layout and identifying which sections are still sample-data or placeholder.
+- Updating `dashboard_view` in `core/views.py` to supply real queryset-backed counts, recent records, and any other data the template needs.
+- Replacing all sample/placeholder data in `dashboard.html` with live template variables.
+- Adding any missing CSS classes to `static/css/app.css` for dashboard-specific widgets (KPI cards, activity feed rows, alert strip).
+- Wiring any chart instances to real data passed from the view context.
 
 ## Constraints for the next edit
-- Focus on Users HTML functionality only.
-- Do not refactor unrelated modules (Groups, Buildings, Clients, Profile).
-- Preserve the shared `base.html` shell and left-panel behavior.
+- Focus on `dashboard.html` functionality only.
+- Do not refactor unrelated modules (Groups, Buildings, Clients, Profile, Users).
+- Preserve the shared `base.html` shell and left-panel behaviour.
 - Keep CSS in `static/css/app.css` and shared interaction logic in `static/js/app.js`.
 - Return complete updated files for affected code when requesting AI help.
 
@@ -59,19 +63,17 @@ This next step should include:
 Use a prompt in this shape for the next coding session:
 
 ```text
-Current task: update and wire the functional part of the Users pages (users.html, user_detail.html).
+Current task: update and wire the functional part of dashboard.html.
 Constraints:
 - keep current Django structure
 - keep existing bulk style
 - no unrelated refactor
 - preserve existing shared base.html shell and left panel
-- only touch Users-related files unless a small shared CSS/JS/admin/model update is required
+- only touch dashboard-related files unless a small shared CSS/JS/admin/model update is required
 Relevant files:
-- templates/core/users.html
-- templates/core/user_detail.html
+- templates/core/dashboard.html
 - core/views.py
 - core/urls.py
-- accounts/models.py
 - static/css/app.css
 - static/js/app.js
 Please return complete updated files only.
