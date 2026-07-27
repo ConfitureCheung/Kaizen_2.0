@@ -6,43 +6,258 @@
 
 {% block content %}
 <div class="dashboard-layout">
+
+    {# ── BUILDING LOCATION MAP ── #}
     <section class="dashboard-card building-location-card">
-        <div class="card-head">Building Location</div>
-        <div class="card-body">
-            <div class="map-box"></div>
+        <div class="card-head">
+            <i class="fa-regular fa-building" style="margin-right:6px;"></i>
+            BUILDING LOCATIONS
+        </div>
+        <div class="card-body" style="padding:0;">
+            {% if map_building and map_building.latitude and map_building.longitude %}
+                <div id="dashboard-map" style="height:360px; width:100%;"></div>
+            {% elif map_building %}
+                {# Building exists but no lat/lng — show address-based embed #}
+                <iframe
+                    width="100%"
+                    height="360"
+                    frameborder="0"
+                    style="border:0; display:block;"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    src="https://www.google.com/maps/embed/v1/place?key={{ google_maps_api_key }}&q={{ map_building.address|urlencode }}"
+                    allowfullscreen>
+                </iframe>
+            {% else %}
+                <div class="map-box" style="height:360px; display:flex; align-items:center; justify-content:center; color:#888;">
+                    No building configured yet.
+                </div>
+            {% endif %}
         </div>
     </section>
 
+    {# ── RIGHT COLUMN ── #}
     <div class="dashboard-right-column">
+
+        {# DATA COLLECTION DEVICE STATUS #}
         <section class="dashboard-info-panel">
-            <h2>Data Collection Device Status</h2>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <i class="fa-solid fa-database" style="color:#888; font-size:15px;"></i>
+                <h2 style="margin:0; font-size:15px; font-weight:700; color:#25272b;">DATA COLLECTION DEVICE STATUS</h2>
+            </div>
+
+            {% if any_offline %}
+            <div style="
+                background:#fff4f4;
+                border:1px solid #f5c2c2;
+                border-radius:6px;
+                padding:8px 14px;
+                margin-bottom:10px;
+                display:flex;
+                align-items:center;
+                gap:8px;
+                font-size:13px;
+                color:#b42318;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                A Data Collection Device is offline.
+            </div>
+            {% endif %}
+
+            {% if device_status_rows %}
+            <div style="
+                background:#f8f8f8;
+                border:1px solid #cfcfd2;
+                border-radius:8px;
+                overflow:hidden;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom:1px solid #e0e0e2;">
+                            <th style="padding:10px 14px; text-align:left; font-size:13px; font-weight:700; color:#1f2023; width:60px;">Status</th>
+                            <th style="padding:10px 14px; text-align:left; font-size:13px; font-weight:700; color:#1f2023;">Data Collection Device</th>
+                            <th style="padding:10px 14px; text-align:left; font-size:13px; font-weight:700; color:#1f2023;">Histogram</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in device_status_rows %}
+                        <tr style="border-bottom:1px solid #ebebed;">
+                            <td style="padding:12px 14px; text-align:left;">
+                                {% if row.connected %}
+                                {# Green pulse-line icon (connected) #}
+                                <svg width="28" height="22" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <polyline points="1,11 5,11 7,4 9,18 11,8 13,14 15,11 27,11"
+                                        stroke="#2ecc71" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round"
+                                        fill="none"/>
+                                </svg>
+                                {% else %}
+                                {# Red pulse-line icon (not connected) #}
+                                <svg width="28" height="22" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <polyline points="1,11 5,11 7,4 9,18 11,8 13,14 15,11 27,11"
+                                        stroke="#e74c3c" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round"
+                                        fill="none"/>
+                                </svg>
+                                {% endif %}
+                            </td>
+                            <td style="padding:12px 14px;">
+                                <span style="color:#4d7fc4; font-size:13px;">
+                                    {{ row.db.name }}
+                                </span>
+                                <div style="font-size:12px; color:#888; margin-top:2px;">
+                                    {% if row.connected %}Connected{% else %}Not Connected{% endif %}
+                                </div>
+                            </td>
+                            <td style="padding:12px 14px;">
+                                {# Placeholder histogram spark — replace with real chart if needed #}
+                                {% if row.connected %}
+                                <svg width="60" height="22" viewBox="0 0 60 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <polyline points="2,18 10,10 18,14 26,6 34,12 42,8 50,4 58,10"
+                                        stroke="#2ecc71" stroke-width="1.8"
+                                        stroke-linecap="round" stroke-linejoin="round"
+                                        fill="none"/>
+                                </svg>
+                                {% else %}
+                                <svg width="60" height="22" viewBox="0 0 60 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <polyline points="2,10 10,16 18,8 26,14 34,6 42,14 50,10 58,16"
+                                        stroke="#e74c3c" stroke-width="1.8"
+                                        stroke-linecap="round" stroke-linejoin="round"
+                                        fill="none"/>
+                                </svg>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
             <div class="info-box">No buildings or database connections configured yet.</div>
+            {% endif %}
         </section>
 
+        {# BUILDING REPORTS COUNT #}
         <section class="dashboard-info-panel">
-            <h2>Building Reports Count</h2>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <i class="fa-regular fa-file-lines" style="color:#888; font-size:15px;"></i>
+                <h2 style="margin:0; font-size:15px; font-weight:700; color:#25272b;">BUILDING REPORTS COUNT</h2>
+            </div>
+
+            {% if building_report_counts %}
+            <div style="
+                background:#f8f8f8;
+                border:1px solid #cfcfd2;
+                border-radius:8px;
+                overflow:hidden;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="border-bottom:1px solid #e0e0e2;">
+                            <th style="padding:10px 14px; text-align:left; font-size:13px; font-weight:700; color:#1f2023;">
+                                <i class="fa-regular fa-building" style="margin-right:4px;"></i>Building
+                            </th>
+                            <th style="padding:10px 14px; text-align:left; font-size:13px; font-weight:700; color:#1f2023;">
+                                <i class="fa-regular fa-file-lines" style="margin-right:4px;"></i>Report Count
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in building_report_counts %}
+                        <tr style="border-bottom:1px solid #ebebed;">
+                            <td style="padding:12px 14px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    {% if item.building.photo %}
+                                    <img src="{{ item.building.photo.url }}"
+                                         style="width:28px; height:28px; border-radius:4px; object-fit:cover;"
+                                         alt="{{ item.building.name }}">
+                                    {% else %}
+                                    <span style="width:28px; height:28px; background:#e8eaed; border-radius:4px; display:inline-flex; align-items:center; justify-content:center;">
+                                        <i class="fa-regular fa-building" style="color:#999; font-size:12px;"></i>
+                                    </span>
+                                    {% endif %}
+                                    <span style="color:#4d7fc4; font-size:13px;">
+                                        {{ item.building.name }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td style="padding:12px 14px; font-size:13px; color:#2c2f34;">
+                                {{ item.count }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
             <div class="info-box">No buildings</div>
+            {% endif %}
         </section>
     </div>
 
+    {# ── LATEST 5 REPORTS ── #}
     <section class="reports-section">
-        <h2>Latest 5 Reports</h2>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <i class="fa-regular fa-file-lines" style="color:#888; font-size:15px;"></i>
+            <h2 style="margin:0; font-size:15px; font-weight:700; color:#25272b;">LATEST 5 REPORTS</h2>
+        </div>
         <div class="reports-table-wrap">
             <table class="reports-table">
                 <thead>
                     <tr>
-                        <th>Report</th>
-                        <th>Building</th>
-                        <th>Date &amp; Time</th>
+                        <th><i class="fa-regular fa-file-lines" style="margin-right:4px;"></i>Report</th>
+                        <th><i class="fa-regular fa-building" style="margin-right:4px;"></i>Building</th>
+                        <th><i class="fa-regular fa-calendar" style="margin-right:4px;"></i>Date &amp; Time ▾</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="3" class="empty-row">No reports</td>
-                    </tr>
+                    {% if latest_reports %}
+                        {% for report in latest_reports %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'building_report' report.building.pk %}"
+                                   style="color:#4d7fc4; text-decoration:none;">
+                                    {{ report.name }}
+                                </a>
+                            </td>
+                            <td>{{ report.building.name }}</td>
+                            <td>{{ report.datetime }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="empty-row">No reports</td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
     </section>
+
 </div>
+
+{# ── Google Maps JS (only if we have lat/lng) ── #}
+{% if map_building and map_building.latitude and map_building.longitude %}
+<script>
+function initDashboardMap() {
+    var latlng = {
+        lat: {{ map_building.latitude }},
+        lng: {{ map_building.longitude }}
+    };
+    var map = new google.maps.Map(document.getElementById('dashboard-map'), {
+        center: latlng,
+        zoom: 15,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false
+    });
+    var marker = new google.maps.Marker({
+        position: latlng,
+        map: map,
+        title: "{{ map_building.name|escapejs }}"
+    });
+}
+</script>
+<script
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initDashboardMap"
+    async defer>
+</script>
+{% endif %}
+
 {% endblock %}

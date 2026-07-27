@@ -48,12 +48,117 @@ def get_sidebar_context(user):
 @login_required
 def dashboard_view(request):
     client_ids = get_allowed_client_ids(request.user)
-    buildings = Building.objects.filter(client_id__in=client_ids)
-    clients = Client.objects.filter(id__in=client_ids)
+    clients = Client.objects.filter(id__in=client_ids).prefetch_related("buildings")
+
+    # ── 1. Building Location: 1st building created per client ──────────────────
+    # "First created" = lowest pk (auto-incremented), consistent with created_at ordering
+    first_buildings = []
+    for client in clients:
+        first_b = client.buildings.order_by("pk").first()
+        if first_b:
+            first_buildings.append(first_b)
+
+    # Pick the single building to centre the map on (first client's first building)
+    map_building = first_buildings[0] if first_buildings else None
+
+    # ── 2. Data Collection Device Status ──────────────────────────────────────
+    # One row per building that has a building_database selected.
+    # Connected = the db_file exists on disk and can be opened.
+    all_buildings = Building.objects.filter(
+        client_id__in=client_ids
+    ).select_related("building_database").order_by("pk")
+
+    device_status_rows = []
+    any_offline = False
+
+    for building in all_buildings:
+        db = building.building_database
+        if not db:
+            continue  # skip buildings with no DB selected
+
+        connected = False
+        try:
+            db_path = db.db_file.path
+            if os.path.exists(db_path):
+                conn = sqlite3.connect(db_path)
+                conn.cursor().execute("SELECT 1")
+                conn.close()
+                connected = True
+        except Exception:
+            connected = False
+
+        if not connected:
+            any_offline = True
+
+        device_status_rows.append({
+            "building": building,
+            "db": db,
+            "connected": connected,
+        })
+
+    # ── 3. Building Reports Count ──────────────────────────────────────────────
+    # Count reports per building from each building's SQLite DB.
+    # "Reports" = rows in the `report` table (adjust table name if yours differs).
+    building_report_counts = []
+    for building in all_buildings:
+        db = building.building_database
+        if not db:
+            continue
+        count = 0
+        try:
+            conn = sqlite3.connect(db.db_file.path)
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM report")
+            count = cur.fetchone()[0]
+            conn.close()
+        except Exception:
+            count = 0
+        if count > 0 or building.building_database:
+            building_report_counts.append({
+                "building": building,
+                "count": count,
+            })
+
+    # ── 4. Latest 5 Reports ────────────────────────────────────────────────────
+    latest_reports = []
+    for building in all_buildings:
+        db = building.building_database
+        if not db:
+            continue
+        try:
+            conn = sqlite3.connect(db.db_file.path)
+            cur = conn.cursor()
+            # Try common column names; adjust if your schema differs
+            cur.execute("""
+                SELECT name, datetime
+                FROM report
+                ORDER BY datetime DESC
+                LIMIT 5
+            """)
+            for row in cur.fetchall():
+                latest_reports.append({
+                    "name": row[0],
+                    "building": building,
+                    "datetime": row[1],
+                })
+            conn.close()
+        except Exception:
+            pass
+
+    # Sort combined list and take top 5
+    latest_reports.sort(key=lambda r: r["datetime"] if r["datetime"] else "", reverse=True)
+    latest_reports = latest_reports[:5]
+
     return render(request, "dashboard.html", {
         **get_sidebar_context(request.user),
-        "buildings": buildings,
         "clients": clients,
+        "map_building": map_building,
+        "first_buildings": first_buildings,
+        "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+        "device_status_rows": device_status_rows,
+        "any_offline": any_offline,
+        "building_report_counts": building_report_counts,
+        "latest_reports": latest_reports,
     })
 
 
