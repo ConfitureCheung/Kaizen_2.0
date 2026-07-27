@@ -1,97 +1,185 @@
 {% extends "base.html" %}
 
-{% block title %}Add User{% endblock %}
+{% block title %}
+    {% if user_obj %}
+        {% if readonly %}View User{% else %}Edit User{% endif %}
+    {% else %}
+        Add User
+    {% endif %}
+{% endblock %}
+
 {% block breadcrumb %}Users{% endblock %}
-{% block page_title %}BLENDY : Add User{% endblock %}
+
+{% block page_title %}
+    BLENDY :
+    {% if user_obj %}
+        {% if readonly %}View User{% else %}Edit User{% endif %}
+    {% else %}
+        Add User
+    {% endif %}
+{% endblock %}
 
 {% block content %}
-<form class="user-detail-form" action="#" method="post" enctype="multipart/form-data">
+<form class="user-detail-form" action="" method="post" enctype="multipart/form-data">
     {% csrf_token %}
+    {% if user_obj %}<input type="hidden" name="pk" value="{{ user_obj.pk }}">{% endif %}
 
     <div class="user-form-grid">
         <div class="form-field">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username">
+            <label for="username">Username <span style="color:#dc3545;">*</span></label>
+            <input type="text"
+                   id="username"
+                   name="username"
+                   value="{% if user_obj and user_obj.auth_user %}{{ user_obj.auth_user.username }}{% endif %}"
+                   {% if user_obj or readonly %}readonly{% endif %}
+                   {% if not user_obj %}required{% endif %}>
+            {% if errors.username %}<div style="font-size:12px;color:#dc3545;margin-top:4px;">{{ errors.username }}</div>{% endif %}
         </div>
 
         <div class="form-field">
-            <label for="password">Password</label>
-            <input type="text" id="password" name="password">
+            <label for="password">Password <span style="color:#dc3545;">*</span></label>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   {% if user_obj or readonly %}value="********" readonly{% else %}required{% endif %}>
+            {% if errors.password %}<div style="font-size:12px;color:#dc3545;margin-top:4px;">{{ errors.password }}</div>{% endif %}
         </div>
 
         <div class="form-field">
             <label for="first_name">First name</label>
-            <input type="text" id="first_name" name="first_name">
+            <input type="text"
+                   id="first_name"
+                   name="first_name"
+                   value="{% if user_obj and user_obj.auth_user %}{{ user_obj.auth_user.first_name }}{% endif %}"
+                   {% if readonly %}readonly{% endif %}>
         </div>
 
         <div class="form-field">
             <label for="last_name">Last name</label>
-            <input type="text" id="last_name" name="last_name">
+            <input type="text"
+                   id="last_name"
+                   name="last_name"
+                   value="{% if user_obj and user_obj.auth_user %}{{ user_obj.auth_user.last_name }}{% endif %}"
+                   {% if readonly %}readonly{% endif %}>
         </div>
 
         <div class="form-field">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email">
+            <label for="email">Email <span style="color:#dc3545;">*</span></label>
+            <input type="email"
+                   id="email"
+                   name="email"
+                   value="{{ user_obj.email|default:'' }}"
+                   {% if readonly %}readonly{% endif %}
+                   required>
+            {% if errors.email %}<div style="font-size:12px;color:#dc3545;margin-top:4px;">{{ errors.email }}</div>{% endif %}
         </div>
 
         <div class="form-field">
             <label for="work_phone">Work phone</label>
-            <input type="text" id="work_phone" name="work_phone">
+            <input type="text"
+                   id="work_phone"
+                   name="work_phone"
+                   value="{{ user_obj.work_phone|default:'' }}"
+                   {% if readonly %}readonly{% endif %}>
         </div>
 
         <div class="form-field">
             <label for="cell_phone">Cell phone</label>
-            <input type="text" id="cell_phone" name="cell_phone">
+            <input type="text"
+                   id="cell_phone"
+                   name="cell_phone"
+                   value="{{ user_obj.cell_phone|default:'' }}"
+                   {% if readonly %}readonly{% endif %}>
         </div>
 
         <div class="form-field">
             <label for="position">Position</label>
-            <input type="text" id="position" name="position">
+            <input type="text"
+                   id="position"
+                   name="position"
+                   value="{{ user_obj.position|default:'' }}"
+                   {% if readonly %}readonly{% endif %}>
         </div>
 
         <div class="form-field">
             <label for="title">Title</label>
-            <input type="text" id="title" name="title">
+            <input type="text"
+                   id="title"
+                   name="title"
+                   value="{{ user_obj.title|default:'' }}"
+                   {% if readonly %}readonly{% endif %}>
         </div>
 
         <div class="form-field">
             <label for="timezone">Timezone</label>
-            <select id="timezone" name="timezone">
-                <option>Hong Kong (UTC+8)</option>
+            <select id="timezone" name="timezone" {% if readonly %}disabled{% endif %}>
+                {% for tz_val, tz_label in timezone_choices %}
+                <option value="{{ tz_val }}" {% if user_obj.timezone == tz_val %}selected{% endif %}>
+                    {{ tz_label }}
+                </option>
+                {% endfor %}
             </select>
         </div>
 
         <div class="form-field">
             <label for="group">Group</label>
-            <select id="group" name="group">
-                <option>-----------</option>
+            <select id="group" name="group" {% if readonly %}disabled{% endif %}>
+                <option value="">-----------</option>
+                {% for group in groups %}
+                <option value="{{ group.pk }}"
+                    {% if selected_group_id == group.pk %}selected{% endif %}>
+                    {{ group.name }}
+                </option>
+                {% endfor %}
             </select>
         </div>
 
         <div class="form-field">
             <label for="photo">Photo</label>
-            <input type="file" id="photo" name="photo">
+            {% if readonly %}
+                {% if user_obj.photo %}
+                    <div style="margin-bottom:8px;">
+                        <img src="{{ user_obj.photo.url }}" alt="User photo" style="max-width:120px;max-height:120px;border-radius:6px;">
+                    </div>
+                {% endif %}
+                <input type="file" id="photo" name="photo" disabled>
+            {% else %}
+                {% if user_obj.photo %}
+                    <div style="margin-bottom:8px;">
+                        <img src="{{ user_obj.photo.url }}" alt="User photo" style="max-width:120px;max-height:120px;border-radius:6px;">
+                    </div>
+                {% endif %}
+                <input type="file" id="photo" name="photo">
+            {% endif %}
         </div>
     </div>
 
     <div class="user-check-grid">
         <label class="check-row">
-            <input type="checkbox" name="view_all">
+            <input type="checkbox" name="view_all"
+                   {% if user_obj.view_all %}checked{% endif %}
+                   {% if readonly %}disabled{% endif %}>
             <span>View all</span>
         </label>
 
         <label class="check-row">
-            <input type="checkbox" name="daily_summary" checked>
+            <input type="checkbox" name="daily_summary"
+                   {% if not user_obj or user_obj.daily_summary %}checked{% endif %}
+                   {% if readonly %}disabled{% endif %}>
             <span>Daily summary</span>
         </label>
 
         <label class="check-row">
-            <input type="checkbox" name="single_report">
+            <input type="checkbox" name="single_report"
+                   {% if user_obj.single_report %}checked{% endif %}
+                   {% if readonly %}disabled{% endif %}>
             <span>Single report per email</span>
         </label>
 
         <label class="check-row">
-            <input type="checkbox" name="receive_assigned">
+            <input type="checkbox" name="receive_assigned"
+                   {% if user_obj.receive_assigned %}checked{% endif %}
+                   {% if readonly %}disabled{% endif %}>
             <span>Receive assigned insights</span>
         </label>
     </div>
@@ -99,18 +187,43 @@
     <div class="user-delivery-row">
         <div class="form-field delivery-field">
             <label for="daily_delivery">Daily insight delivery</label>
-            <select id="daily_delivery" name="daily_delivery">
-                <option>Morning 6am - 12pm</option>
+            <select id="daily_delivery" name="daily_delivery" {% if readonly %}disabled{% endif %}>
+                <option value="morning" {% if not user_obj or user_obj.daily_delivery == "morning" %}selected{% endif %}>Morning 6am - 12pm</option>
+                <option value="afternoon" {% if user_obj.daily_delivery == "afternoon" %}selected{% endif %}>Afternoon 12pm - 6pm</option>
+                <option value="evening" {% if user_obj.daily_delivery == "evening" %}selected{% endif %}>Evening 6pm - 12am</option>
             </select>
         </div>
     </div>
 
     <div class="form-footer-actions">
-        <button type="button" class="save-btn">
+        {% if not readonly %}
+        <button type="submit" class="save-btn">
             <i class="fa-regular fa-floppy-disk"></i>
             Save
         </button>
-        <a href="{% url 'users' %}" class="cancel-btn">Cancel</a>
+        {% endif %}
+        <a href="{% url 'users' %}" class="cancel-btn">{% if readonly %}Back{% else %}Cancel{% endif %}</a>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const usernameInput = document.getElementById('username');
+    const firstNameInput = document.getElementById('first_name');
+
+    if (usernameInput && firstNameInput && !usernameInput.readOnly && !firstNameInput.readOnly) {
+        firstNameInput.dataset.touched = firstNameInput.value ? '1' : '0';
+
+        firstNameInput.addEventListener('input', function () {
+            this.dataset.touched = this.value.trim() ? '1' : '0';
+        });
+
+        usernameInput.addEventListener('input', function () {
+            if (firstNameInput.dataset.touched !== '1') {
+                firstNameInput.value = this.value;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

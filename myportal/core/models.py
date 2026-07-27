@@ -271,6 +271,18 @@ class BuildingUser(models.Model):
     buildings = models.ManyToManyField(Building, blank=True, related_name="users")
     is_active = models.BooleanField(default=True)
 
+    work_phone = models.CharField(max_length=50, blank=True)
+    cell_phone = models.CharField(max_length=50, blank=True)
+    position = models.CharField(max_length=150, blank=True)
+    title = models.CharField(max_length=50, blank=True)
+    timezone = models.CharField(max_length=50, choices=TIMEZONE_CHOICES, default="Asia/Hong_Kong")
+    photo = models.ImageField(upload_to="user_photos/", blank=True, null=True)
+    view_all = models.BooleanField(default=False)
+    daily_summary = models.BooleanField(default=True)
+    single_report = models.BooleanField(default=False)
+    receive_assigned = models.BooleanField(default=False)
+    daily_delivery = models.CharField(max_length=20, default="morning")
+
     class Meta:
         ordering = ["client__name", "full_name"]
 

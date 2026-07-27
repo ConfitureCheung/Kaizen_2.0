@@ -2,15 +2,21 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # ── Users ──
     path("users/", views.users_view, name="users"),
     path("users/add/", views.user_detail_view, name="user_detail"),
+    path("users/<int:pk>/", views.user_view_view, name="user_view"),
+    path("users/<int:pk>/edit/", views.user_detail_view, name="user_edit"),
+    path("users/<int:pk>/delete/", views.user_delete_view, name="user_delete"),
 
+    # ── Groups ──
     path("groups/", views.groups_view, name="groups"),
     path("groups/add/", views.group_detail_view, name="group_detail"),
     path("groups/<int:pk>/", views.group_saved_view, name="group_saved"),
     path("groups/<int:pk>/members/", views.group_members_view, name="group_members"),
     path("groups/<int:pk>/delete/", views.group_delete_view, name="group_delete"),
 
+    # ── Buildings ──
     path("buildings/", views.buildings_view, name="buildings"),
     path("buildings/add/", views.building_detail_view, name="building_detail"),
     path("buildings/<int:pk>/edit/", views.building_detail_view, name="building_edit"),
@@ -18,12 +24,14 @@ urlpatterns = [
     path("buildings/<int:pk>/delete/", views.building_delete_view, name="building_delete"),
     path("buildings/<int:pk>/report/", views.building_report_view, name="building_report"),
 
+    # ── Clients ──
     path("clients/", views.clients_view, name="clients"),
     path("clients/add/", views.client_detail_view, name="client_detail"),
     path("clients/<int:pk>/edit/", views.client_detail_view, name="client_edit"),
     path("clients/<int:pk>/delete/", views.client_delete_view, name="client_delete"),
     path("clients/<int:pk>/", views.client_saved_view, name="client_saved"),
 
+    # ── Profile ──
     path("profile/", views.profile_view, name="profile"),
 ]
 

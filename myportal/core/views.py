@@ -9,6 +9,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.db.models.deletion import ProtectedError
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 
 from .models import Client, Building, ClientGroup, BuildingUser, BuildingDatabase
 from .models import COUNTRY_CHOICES, PARTNERSHIP_CHOICES, CURRENCY_CHOICES, TIMEZONE_CHOICES, BUILDING_TYPE_CHOICES, AREA_UNIT_CHOICES, WEATHER_UNIT_CHOICES
@@ -55,21 +57,160 @@ def dashboard_view(request):
     })
 
 
+# ─────────────────────────────────────────────
+# USERS
+# ─────────────────────────────────────────────
+
+# ─── REPLACE users_view ───────────────────────────────────────────────────────
 @login_required
 def users_view(request):
     client_ids = get_allowed_client_ids(request.user)
-    users = BuildingUser.objects.filter(client_id__in=client_ids)
+    users = BuildingUser.objects.filter(client_id__in=client_ids).select_related("auth_user").prefetch_related("groups")
+    deleted_name = request.session.pop("user_deleted_name", None)
     return render(request, "core/users.html", {
         **get_sidebar_context(request.user),
-        "users": users
+        "users": users,
+        "deleted_name": deleted_name,
     })
 
 
+# ─── ADD user_view_view (eye icon – read-only) ────────────────────────────────
 @login_required
-def user_detail_view(request):
+def user_view_view(request, pk):
+    user_obj = get_object_or_404(BuildingUser, pk=pk)
+    client_ids = get_allowed_client_ids(request.user)
+    groups = ClientGroup.objects.filter(client_id__in=client_ids)
+    selected_group = user_obj.groups.first()
+
     return render(request, "core/user_detail.html", {
         **get_sidebar_context(request.user),
+        "user_obj": user_obj,
+        "groups": groups,
+        "selected_group_id": selected_group.pk if selected_group else None,
+        "timezone_choices": TIMEZONE_CHOICES,
+        "readonly": True,
+        "errors": {},
     })
+
+
+# ─── REPLACE user_detail_view (handles Add + Edit) ───────────────────────────
+@login_required
+def user_detail_view(request, pk=None):
+    User = get_user_model()
+    user_obj = get_object_or_404(BuildingUser, pk=pk) if pk else None
+
+    client_ids = get_allowed_client_ids(request.user)
+    client = Client.objects.filter(id__in=client_ids).first()
+    groups = ClientGroup.objects.filter(client_id__in=client_ids)
+    selected_group = user_obj.groups.first() if user_obj else None
+
+    if request.method == "POST":
+        errors = {}
+
+        username = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        email = request.POST.get("email", "").strip()
+
+        if not user_obj and not username:
+            errors["username"] = "Username is required."
+        if not user_obj and not password:
+            errors["password"] = "Password is required."
+        if not email:
+            errors["email"] = "Email is required."
+
+        if not user_obj and username and User.objects.filter(username=username).exists():
+            errors["username"] = "This username is already taken."
+
+        if not first_name and username:
+            first_name = username
+
+        if errors:
+            return render(request, "core/user_detail.html", {
+                **get_sidebar_context(request.user),
+                "user_obj": user_obj,
+                "groups": groups,
+                "selected_group_id": int(request.POST.get("group")) if request.POST.get("group") else None,
+                "timezone_choices": TIMEZONE_CHOICES,
+                "readonly": False,
+                "errors": errors,
+            })
+
+        if not user_obj:
+            auth_user = User.objects.create_user(
+                username=username,
+                password=password,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                is_client_user=True,
+            )
+            user_obj = BuildingUser(
+                client=client,
+                auth_user=auth_user,
+                full_name=f"{first_name} {last_name}".strip() or username,
+                email=email,
+            )
+        else:
+            auth_user = user_obj.auth_user
+            auth_user.first_name = first_name
+            auth_user.last_name = last_name
+            auth_user.email = email
+            auth_user.save()
+
+        user_obj.full_name = f"{first_name} {last_name}".strip() or username or auth_user.username
+        user_obj.email = email
+        user_obj.work_phone = request.POST.get("work_phone", "").strip()
+        user_obj.cell_phone = request.POST.get("cell_phone", "").strip()
+        user_obj.position = request.POST.get("position", "").strip()
+        user_obj.title = request.POST.get("title", "").strip()
+        user_obj.timezone = request.POST.get("timezone", "Asia/Hong_Kong")
+        user_obj.view_all = bool(request.POST.get("view_all"))
+        user_obj.daily_summary = bool(request.POST.get("daily_summary"))
+        user_obj.single_report = bool(request.POST.get("single_report"))
+        user_obj.receive_assigned = bool(request.POST.get("receive_assigned"))
+        user_obj.daily_delivery = request.POST.get("daily_delivery", "morning")
+        user_obj.is_active = True
+
+        if request.FILES.get("photo"):
+            user_obj.photo = request.FILES["photo"]
+
+        user_obj.save()
+
+        group_pk = request.POST.get("group")
+        if group_pk:
+            group = ClientGroup.objects.filter(pk=group_pk, client_id__in=client_ids).first()
+            if group:
+                user_obj.groups.set([group])
+        else:
+            user_obj.groups.clear()
+
+        return redirect("users")
+
+    return render(request, "core/user_detail.html", {
+        **get_sidebar_context(request.user),
+        "user_obj": user_obj,
+        "groups": groups,
+        "selected_group_id": selected_group.pk if selected_group else None,
+        "timezone_choices": TIMEZONE_CHOICES,
+        "readonly": False,
+        "errors": {},
+    })
+
+
+# ─── ADD user_delete_view ─────────────────────────────────────────────────────
+@login_required
+@require_POST
+def user_delete_view(request, pk):
+    user_obj = get_object_or_404(BuildingUser, pk=pk)
+    deleted_name = user_obj.full_name or user_obj.auth_user.username
+    if user_obj.auth_user:
+        user_obj.auth_user.delete()
+    else:
+        user_obj.delete()
+    request.session["user_deleted_name"] = deleted_name
+    return redirect("users")
 
 
 @login_required
@@ -446,19 +587,6 @@ def building_report_view(request, pk):
     })
 
 
-# @login_required
-# def clients_view(request):
-#     if request.user.is_superuser or request.user.is_staff or request.user.is_provider:
-#         clients = Client.objects.all()
-#     else:
-#         clients = Client.objects.filter(memberships__user=request.user).distinct()
-#     deleted_name = request.session.pop("client_deleted_name", None)
-#     return render(request, "core/clients.html", {
-#         **get_sidebar_context(request.user),
-#         "clients": clients,
-#         "deleted_name": deleted_name,
-#     })
-
 @login_required
 def clients_view(request):
     if request.user.is_superuser or request.user.is_staff or request.user.is_provider:
@@ -474,16 +602,6 @@ def clients_view(request):
         "delete_error": delete_error,
     })
 
-
-# @login_required
-# def client_delete_view(request, pk):
-#     if request.method != "POST":
-#         return redirect("clients")
-#     client = get_object_or_404(Client, pk=pk)
-#     name = client.name
-#     client.delete()
-#     request.session["client_deleted_name"] = name
-#     return redirect("clients")
 
 @login_required
 @require_POST
