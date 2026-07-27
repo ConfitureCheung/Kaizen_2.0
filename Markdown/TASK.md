@@ -1,61 +1,63 @@
 # TASK
 
 ## Current task
-Implement the **sliding left panel** interactive function in `base.html`.
+Bring the **Django admin** into visual and behavioural consistency with the frontend view.
 
 ## Immediate objective
-Wire up the full interactive behaviour for the existing sliding left panel in `base.html`. The panel HTML structure and Client → Building data rendering are already in place — this task is purely frontend: CSS animation, JavaScript event handling, and tree expand/collapse behaviour.
+Align the Django admin UI with the BLENDY frontend so that admin users see the same columns, filters, field groupings, and actions as the frontend views, and experience the same visual language (colours, typography, border radius, table styles).
 
 This should include:
-- Open/close toggle triggered by the hamburger button using a smooth CSS `transform: translateX()` slide animation.
-- A semi-transparent overlay backdrop that appears when the panel is open and closes the panel on click.
-- Keyboard dismissal — pressing `Escape` closes the open panel.
-- Tree expand/collapse for the Client → Building hierarchy inside the panel.
-- Active state highlighting for the currently visited page's item in the tree.
-- (Optional) Persistent panel open/closed state across navigation.
+- `list_display`, `list_filter`, `search_fields`, and `ordering` on every `ModelAdmin` mirroring the frontend list view columns and filters.
+- `fieldsets` on every `ModelAdmin` mirroring the frontend detail page field groupings.
+- Read-only / computed display fields (e.g. group member count, building count per client) surfaced in the admin list.
+- Bulk admin actions (e.g. activate/deactivate users) consistent with the per-row actions in the frontend.
+- Custom admin CSS (`static/css/admin_custom.css`) overriding Django admin colour variables and typography with BLENDY design tokens.
+- Admin site branding: `site_header`, `site_title`, and `index_title` set to the BLENDY product name.
+- (Optional) `templates/admin/base_site.html` override to inject the BLENDY logo and custom CSS into the admin shell.
 
 ## Background from the previous step
-The Dashboard functional update is now complete:
-- `dashboard.html` is connected to real queryset-backed KPI counts, recent activity feed, Client → Building summary, and alert/insight strip.
-- Chart widgets are wired to context data passed from `dashboard_view`.
-- No sample/placeholder data remains in the dashboard.
+The sliding left panel interactive function is now complete:
+- Smooth CSS `transform: translateX()` open/close animation via the hamburger button.
+- Overlay backdrop with click-to-close behaviour.
+- Keyboard dismissal (`Escape` key).
+- Tree expand/collapse for the Client → Building hierarchy inside the panel.
+- Active state highlighting for the currently visited page item.
 
-The project already uses a shared authenticated shell in `templates/base.html`, including the sliding left panel HTML structure and Client → Building tree rendering from `sidebar_clients` context.
-All CSS conventions live in `static/css/app.css` and all shared interaction logic lives in `static/js/app.js`.
+All CSS changes lived in `static/css/app.css` and all JS logic in `static/js/app.js`. The panel HTML structure and context dependencies in `base.html` were not changed.
 
 ## Scope for the next coding round
 
 **In scope:**
-- `templates/base.html` — add overlay element if not present; verify panel and hamburger button IDs/classes.
-- `static/css/app.css` — add panel slide-in/out transition, overlay styles, and tree expand/collapse transitions.
-- `static/js/app.js` — add open/close toggle logic, overlay click handler, Escape key handler, and tree expand/collapse logic.
+- `myportal/core/admin.py` — add `list_display`, `list_filter`, `search_fields`, `ordering`, `fieldsets`, `readonly_fields`, and `actions` to all registered model admins.
+- `myportal/accounts/admin.py` — configure the custom user `ModelAdmin` with the same consistency.
+- `static/css/admin_custom.css` — new file; CSS variable overrides targeting Django admin’s built-in CSS custom properties.
+- `templates/admin/base_site.html` — optional; override to inject BLENDY branding and the custom CSS file.
 
 **Out of scope for this round:**
-- Refactoring unrelated modules (Groups, Buildings, Clients, Profile, Users, Dashboard).
-- Adding new backend routes or view logic.
+- Refactoring unrelated modules (Groups, Buildings, Clients, Profile, Users, Dashboard, Left panel).
+- Modifying `static/css/app.css`.
+- Adding new backend routes or view logic outside of admin.
 - Redesigning the data model.
-- Functional wiring of Buildings pages (deferred).
-- Unrelated styling cleanup.
+- Functional wiring of Buildings pages (still deferred).
 
 ## Starting point
-- The panel HTML and Client → Building tree already exist in `base.html` — do not re-render or restructure the data layer.
-- The `sidebar_clients` and `sidebar_profile` context keys must continue to be supplied by every authenticated view; do not remove or rename them.
-- Check existing IDs and class names in `base.html` for the hamburger button and panel wrapper before writing JS selectors.
-- Check `static/js/app.js` for any existing partial panel logic before adding new handlers.
-- Check `static/css/app.css` for any existing panel positioning or transition rules before adding new ones.
+- Review `core/admin.py` and `accounts/admin.py` to audit which models are currently registered and what (if any) `ModelAdmin` customisation already exists.
+- Review each frontend list view (`users.html`, `clients.html`, `groups.html`, `buildings.html`) for the exact columns and filters shown — replicate these in the corresponding `ModelAdmin.list_display` and `list_filter`.
+- Review each frontend detail view (`user_detail.html`, `client_detail.html`, `group_detail.html`, `building_detail.html`) for field groupings — replicate these in `fieldsets`.
+- Check `static/css/app.css` for existing design tokens (primary colour, font, border radius) to use as the source of truth for `admin_custom.css`.
+- Django admin overridable CSS variables are in `django/contrib/admin/static/admin/css/base.css` — target these with `:root` overrides in `admin_custom.css`.
 
 ## Expected deliverables
-1. Hamburger button toggles the panel open and closed with a smooth CSS slide animation.
-2. An overlay backdrop appears behind the open panel and closes it on click.
-3. Pressing `Escape` closes the panel.
-4. Client rows in the panel expand and collapse to show/hide their buildings.
-5. The active page item in the tree is visually highlighted.
-6. No unrelated architecture refactor.
+1. `core/admin.py` with `list_display`, `list_filter`, `search_fields`, `ordering`, `fieldsets`, `readonly_fields`, and bulk `actions` for all models.
+2. `accounts/admin.py` with consistent custom user admin configuration.
+3. `static/css/admin_custom.css` with BLENDY colour, font, and border-radius overrides for the Django admin.
+4. (Optional) `templates/admin/base_site.html` injecting the custom CSS and BLENDY site header.
+5. No unrelated architecture changes.
 
 ## Acceptance criteria
-- Panel slides in and out smoothly without layout shift on the main content area.
-- Overlay appears and disappears in sync with the panel.
-- All three close triggers (hamburger re-click, overlay click, Escape key) work correctly.
-- Tree expand/collapse works for all client rows and their buildings.
-- Active highlighting correctly reflects the current page.
-- Changes remain targeted and do not disturb unrelated modules.
+- Admin list views show the same columns and filters as the corresponding frontend list pages.
+- Admin detail/form views group fields in the same way as the frontend detail pages.
+- Bulk activate/deactivate action available on the Users admin list.
+- Django admin primary colour, font, and border radius visually match the BLENDY frontend.
+- Admin site header reads BLENDY (or the project display name).
+- Changes remain targeted and do not disturb unrelated modules or `app.css`.
