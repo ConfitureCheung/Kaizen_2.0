@@ -4,14 +4,13 @@
 The BLENDY Django project includes the `accounts` and `core` apps, shared authenticated templates, route wiring for dashboard, users, groups, buildings, clients, and profile, and a common visual system in `static/css/app.css`.
 The project is still intentionally hybrid: some screens are queryset-backed and some remain layout-first or sample-data driven while interface work progresses in stages.
 The shared navigation includes a functioning sliding left panel in `base.html` triggered by the hamburger button, rendering a Client → Building tree from queryset-backed context.
-The Profile page, Client pages, Groups pages, and **Users pages are all functionally complete**. The **next active focus is `dashboard.html`**. Buildings pages remain deferred to a later stage.
+The Profile page, Client pages, Groups pages, Users pages, and **Dashboard are all functionally complete**. The **next active focus is the sliding left panel interactive function**. Buildings pages remain deferred to a later stage.
 
 ## Existing structure relevant to the next step
 - `templates/base.html` contains the top bar, hamburger button, breadcrumb bar, page title, global icon navigation, and the sliding left panel — all shared across authenticated pages.
-- `core/views.py` already contains helper logic for allowed clients and queryset-backed pages that can be reused to supply dashboard context.
-- `core/urls.py` already defines the main application page routes, including `dashboard`.
-- `static/css/app.css` already defines the app’s visual language for cards, forms, banners, tables, buttons, and responsive behaviour.
-- The data model supports the custom user model in `accounts/models.py`.
+- `static/css/app.css` already defines the app's visual language for cards, forms, banners, tables, buttons, and responsive behaviour.
+- `static/js/app.js` already contains shared interaction logic that can be extended for the panel.
+- The panel HTML structure and Client → Building tree rendering already exist in `base.html`; only JS and CSS work is needed.
 
 ## Completed pages
 | Page area | Pages | Status |
@@ -22,22 +21,31 @@ The Profile page, Client pages, Groups pages, and **Users pages are all function
 | Groups | `groups.html`, `group_detail.html`, `group_saved.html`, `group_members.html` | ✅ Functional |
 | Clients | `clients.html`, `client_detail.html`, `client_saved.html` | ✅ Functional |
 | Buildings | `buildings.html`, `building_detail.html`, `building_report.html` | 🔲 Layout-only (deferred) |
-| Dashboard | `dashboard.html` | 🔄 In progress |
+| Dashboard | `dashboard.html` | ✅ Functional |
 
-## Dashboard page — current state
-`dashboard.html` currently exists as a partial layout or sample-data screen. It needs to be connected to real queryset-backed data and live summary logic.
+## Sliding left panel — current state
+The panel HTML structure in `base.html` and the Client → Building tree data rendering are already in place. The panel is rendered from queryset-backed context (`sidebar_clients`, `sidebar_profile`). What is missing is the full interactive behaviour: smooth open/close animation, overlay backdrop, keyboard dismissal, and tree expand/collapse.
 
-## Dashboard page — planned functional behaviour
-- **Summary KPI cards** — total counts for active users, clients, buildings, and groups pulled from live querysets.
-- **Recent activity feed** — a short list of the most recently created or updated records across key models.
-- **Client → Building overview** — a summary table or card list showing clients with their building counts, consistent with the left panel hierarchy.
-- **Insight/alert strip** — surface any flagged conditions (e.g. users with no group, buildings with no client assignment) as actionable inline notices.
-- **Charts (if applicable)** — data visualisations such as insight counts by building or user activity trends, using the existing chart library already referenced in the project.
+## Sliding left panel — planned functional behaviour
+- **Open/close toggle** — hamburger button triggers a smooth CSS slide-in/out animation.
+- **Overlay backdrop** — a semi-transparent overlay appears behind the panel when open; clicking it closes the panel.
+- **Keyboard dismissal** — pressing `Escape` closes the panel.
+- **Tree expand/collapse** — clients in the panel can be expanded or collapsed to reveal their buildings.
+- **Active state highlighting** — the currently active page item is highlighted in the tree.
+- **Persistent state (optional)** — open/closed state optionally preserved across page navigation.
+
+## Dashboard page — completed state
+`dashboard.html` is now fully connected to real queryset-backed data:
+- **Summary KPI cards** — live counts for active users, clients, buildings, and groups.
+- **Recent activity feed** — most recently created or updated records across key models.
+- **Client → Building overview** — summary table consistent with the left panel hierarchy.
+- **Insight/alert strip** — flagged conditions (users with no group, buildings with no client assignment).
+- **Chart widgets** — data visualisations wired to context data from `dashboard_view`.
 
 ## Users pages — completed state
-Both Users screens are now fully functional:
+Both Users screens are fully functional:
 - **`users.html`** — queryset-backed list view showing full name, email, work phone, group badges, and action buttons (edit, activate/deactivate).
-- **`user_detail.html`** — handles both create (no `pk`) and edit (with `pk`) flows with POST save, validation feedback, group assignment, and active status toggling. Django admin registration for the custom user model is in place.
+- **`user_detail.html`** — handles both create (no `pk`) and edit (with `pk`) flows with POST save, validation feedback, group assignment, and active status toggling.
 
 ## Groups pages — completed state
 All four Groups screens are fully functional:
@@ -47,17 +55,15 @@ All four Groups screens are fully functional:
 - **`group_members.html`** — member-selection screen with checkbox table and POST membership update.
 
 ## Buildings pages — deferred state
-The three Buildings screens remain layout-only or sample-data driven. Their functional wiring is intentionally deferred until after the Dashboard work is complete:
+The three Buildings screens remain layout-only or sample-data driven. Their functional wiring is intentionally deferred until after the sliding left panel work is complete:
 - **`buildings.html`** — list view, not yet queryset-backed.
 - **`building_detail.html`** — detail/form view, not yet wired to POST handling or database save logic.
 - **`building_report.html`** — report view, not yet pulling real data or rendering live charts.
 
 ## Files most relevant for the next step
-- `templates/core/dashboard.html` — dashboard UI.
-- `core/views.py` — update `dashboard_view` to supply real queryset context.
-- `core/urls.py` — route verification for dashboard URL.
-- `static/css/app.css` — add only what is missing for dashboard-specific layout.
-- `static/js/app.js` — add chart initialisation or dashboard interactivity if needed.
+- `templates/base.html` — panel HTML structure, hamburger button, overlay element.
+- `static/css/app.css` — panel slide animation, overlay styles, tree expand/collapse transitions.
+- `static/js/app.js` — open/close toggle, overlay click handler, Escape key handler, tree expand/collapse logic.
 
 ## Project guardrails
 - Keep changes targeted.
