@@ -36,7 +36,10 @@ urlpatterns = [
 
     path("", views.dashboard_view, name="dashboard"),
     path("dashboard/", views.dashboard_view, name="dashboard"),
+
     path("buildings/<int:building_id>/dashboard/", views.building_dashboard, name="building_dashboard"),
+    path('buildings/<int:pk>/vault/trend-logs/', views.vault_trend_logs, name='vault_trend_logs'),
+    path('buildings/<int:pk>/vault/objects/', views.vault_objects, name='vault_objects'),
 ]
 
 

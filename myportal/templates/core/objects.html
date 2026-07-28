@@ -1,0 +1,312 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Vault – Objects{% endblock %}
+{% block breadcrumb %}Buildings / Block T / Vault: Objects{% endblock %}
+{% block page_title %}Block T 伊利沙伯醫院日間醫療中心新翼 : Objects{% endblock %}
+
+{% block extra_css %}
+<style>
+.vault-subnav {
+    display: flex;
+    margin: 10px 10px 0;
+    border-bottom: 2px solid #e0e0e0;
+}
+.vault-subnav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 18px;
+    font-size: 14px;
+    color: #555;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+.vault-subnav a.active,
+.vault-subnav a:hover { color: #e87722; border-bottom-color: #e87722; }
+
+.objects-layout {
+    display: grid;
+    grid-template-columns: 648px 1fr;
+    height: calc(100vh - 218px);
+    min-height: 480px;
+    margin: 14px 10px 0;
+    border: 1px solid #d8d8d8;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+}
+
+/* ── Left list panel ── */
+.objects-left {
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+}
+.objects-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid #e8e8e8;
+    background: #fafafa;
+}
+.objects-filter-btn {
+    width: 32px; height: 32px;
+    border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; color: #666; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.objects-search-input {
+    flex: 1; height: 32px;
+    border: 1px solid #d0d0d0; border-radius: 4px;
+    padding: 0 10px; font-size: 13px; outline: none;
+}
+.objects-table-head {
+    display: grid;
+    grid-template-columns: 1fr 120px 155px;
+    padding: 8px 14px;
+    font-size: 13px; font-weight: 700; color: #2f3136;
+    border-bottom: 1px solid #e0e0e0;
+    background: #fafafa;
+}
+.objects-table-head span { display: flex; align-items: center; gap: 4px; }
+.sort-icon { font-size: 10px; color: #aaa; }
+
+.objects-record-list { flex: 1; overflow-y: auto; }
+.objects-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 155px;
+    padding: 9px 14px;
+    font-size: 13px; color: #333;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background .12s;
+}
+.objects-row:hover { background: #f3f7ff; }
+.objects-row.selected { background: #2a6dd9; color: #fff; }
+.objects-row.selected .obj-ref,
+.objects-row.selected .obj-date { color: #c8dcff; }
+.obj-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+.obj-ref  { color: #777; }
+.obj-date { color: #777; font-size: 12px; }
+
+.objects-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-top: 1px solid #e8e8e8;
+    font-size: 13px; color: #666;
+    background: #fafafa;
+    flex-shrink: 0;
+}
+.page-btns { display: flex; align-items: center; gap: 4px; }
+.page-btn {
+    min-width: 28px; height: 28px;
+    border: 1px solid #d0d0d0; border-radius: 4px;
+    background: #fff; font-size: 13px; color: #555;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 6px;
+}
+.page-btn.active { background: #e87722; color: #fff; border-color: #e87722; }
+
+/* ── Right detail panel ── */
+.objects-right {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+.obj-detail-header {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid #e8e8e8;
+}
+.obj-detail-title {
+    font-size: 16px; font-weight: 700; color: #2f3136;
+    margin-bottom: 4px; line-height: 1.3;
+}
+.obj-detail-subtitle { font-size: 12px; color: #888; }
+.obj-detail-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+.obj-detail-col { padding: 14px 18px; }
+.obj-detail-col:first-child { border-right: 1px solid #f0f0f0; }
+.obj-field-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 6px;
+    padding: 7px 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 13px;
+}
+.obj-field-row:last-child { border-bottom: none; }
+.obj-field-label { color: #888; font-weight: 500; }
+.obj-field-value { color: #2c2f34; word-break: break-all; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<div class="objects-layout">
+
+    {# ── LEFT: list ── #}
+    <div class="objects-left">
+        <div class="objects-filter-row">
+            <button class="objects-filter-btn"><i class="fa-solid fa-filter"></i></button>
+            <input class="objects-search-input" type="text" placeholder="Search...">
+        </div>
+
+        <div class="objects-table-head">
+            <span>Name <i class="fa-solid fa-sort sort-icon"></i></span>
+            <span>Reference <i class="fa-solid fa-sort sort-icon"></i></span>
+            <span>Last Update <i class="fa-solid fa-arrow-up sort-icon"></i></span>
+        </div>
+
+        <div class="objects-record-list">
+            <div class="objects-row selected">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby_4PFS-1L2_EmerPower On/Off</span>
+                <span class="obj-ref">144.BI3</span>
+                <span class="obj-date">2023-01-12 04:27:52</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Lift Lobby (20AB)_EmerPower On/Off</span>
+                <span class="obj-ref">144.BI4</span>
+                <span class="obj-date">2023-01-12 04:27:53</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Lift Lobby (21AB)_EmerPower On/Off</span>
+                <span class="obj-ref">144.BI5</span>
+                <span class="obj-date">2023-01-12 04:27:53</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby (L4-02)_Circuit On/Off</span>
+                <span class="obj-ref">144.BI6</span>
+                <span class="obj-date">2023-01-12 04:27:53</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby (L4-03)_Circuit On/Off</span>
+                <span class="obj-ref">144.BI7</span>
+                <span class="obj-date">2023-01-12 04:27:53</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Toilet_Circuit On/Off</span>
+                <span class="obj-ref">144.BI8</span>
+                <span class="obj-date">2023-01-12 04:27:54</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby (L4-02)_Auto/Manual Status</span>
+                <span class="obj-ref">144.BI9</span>
+                <span class="obj-date">2023-01-12 04:27:54</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby (L4-03)_Auto/Manual Status</span>
+                <span class="obj-ref">144.BI10</span>
+                <span class="obj-date">2023-01-12 04:27:54</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby (L4-02)_Circuit On/Off_TL</span>
+                <span class="obj-ref">144.TL26</span>
+                <span class="obj-date">2023-01-12 04:28:13</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby_4PFS-1L2_EmerPower On/Off_TL</span>
+                <span class="obj-ref">144.TL23</span>
+                <span class="obj-date">2023-01-12 04:28:16</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Lift Lobby (20AB)_EmerPower On/Off_TL</span>
+                <span class="obj-ref">144.TL24</span>
+                <span class="obj-date">2023-01-12 04:28:17</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Lift Lobby (21AB)_EmerPower On/Off_TL</span>
+                <span class="obj-ref">144.TL25</span>
+                <span class="obj-date">2023-01-12 04:28:17</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby (L4-03)_Circuit On/Off_TL</span>
+                <span class="obj-ref">144.TL27</span>
+                <span class="obj-date">2023-01-12 04:28:17</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Toilet_Circuit On/Off_TL</span>
+                <span class="obj-ref">144.TL28</span>
+                <span class="obj-date">2023-01-12 04:28:18</span>
+            </div>
+            <div class="objects-row">
+                <span class="obj-name">BLK-T_LTG_L4 Public Lift Lobby (L4-02)_Auto/Manual Status_TL</span>
+                <span class="obj-ref">144.TL29</span>
+                <span class="obj-date">2023-01-12 04:28:18</span>
+            </div>
+        </div>
+
+        <div class="objects-pagination">
+            <span>Displaying 1 to 15 of 43067 entries</span>
+            <div class="page-btns">
+                <button class="page-btn">&laquo;</button>
+                <button class="page-btn">&lsaquo;</button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn">4</button>
+                <button class="page-btn">5</button>
+                <button class="page-btn">6</button>
+                <button class="page-btn">7</button>
+                <button class="page-btn">&rsaquo;</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── RIGHT: detail ── #}
+    <div class="objects-right">
+        <div class="obj-detail-header">
+            <div class="obj-detail-title">
+                BLK-T_LTG_L4 Public Lift Lobby_4PFS-1L2_EmerPower On/Off
+                <span style="font-size:13px;font-weight:400;color:#888;">(144 BI3)</span>
+            </div>
+            <div class="obj-detail-subtitle">Last Updated: 2023-01-12 04:27:52</div>
+        </div>
+
+        <div class="obj-detail-body">
+            <div class="obj-detail-col">
+                <div class="obj-field-row"><span class="obj-field-label">Active_Text:</span><span class="obj-field-value">On</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Commission_Flag:</span><span class="obj-field-value">not-commissioned</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Description:</span><span class="obj-field-value">N/A</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Device_Type:</span><span class="obj-field-value">On_Off BDC</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Event_Enable:</span><span class="obj-field-value">3 to-offnormal|to-fault|to-normal</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Flags:</span><span class="obj-field-value">12 not-commissioned</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Inactive_Text:</span><span class="obj-field-value">Off</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Manual_Override:</span><span class="obj-field-value">N/A</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Notification_Class:</span><span class="obj-field-value">5</span></div>
+            </div>
+            <div class="obj-detail-col">
+                <div class="obj-field-row"><span class="obj-field-label">Notify_Type:</span><span class="obj-field-value">alarm</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Object_Name:</span><span class="obj-field-value">BLK-T_LTG_L4 Public Lift Lobby_4PFS-1L2_EmerPower On/Off</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Out_Of_Service:</span><span class="obj-field-value">false</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Polarity:</span><span class="obj-field-value">normal</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Present_Value:</span><span class="obj-field-value">inactive</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Time_Delay:</span><span class="obj-field-value">60</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">Update_Interval:</span><span class="obj-field-value">24</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">rev:</span><span class="obj-field-value">5</span></div>
+                <div class="obj-field-row"><span class="obj-field-label">t:</span><span class="obj-field-value">BI</span></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll(".objects-row").forEach(row => {
+    row.addEventListener("click", function () {
+        document.querySelectorAll(".objects-row").forEach(r => r.classList.remove("selected"));
+        this.classList.add("selected");
+    });
+});
+</script>
+{% endblock %}

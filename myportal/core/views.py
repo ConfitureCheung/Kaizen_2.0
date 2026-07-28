@@ -957,3 +957,21 @@ def building_dashboard(request, building_id):
         "selected_client": building.client,
         "building_tab": "dashboard",
     })
+
+
+def vault_trend_logs(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, 'core/trend_logs.html', {
+        'building': building,
+        'selected_building': building,
+        'building_tab': 'vault',
+        'trend_logs': [],
+    })
+
+def vault_objects(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, 'core/objects.html', {
+        'building': building,
+        'selected_building': building,
+        'building_tab': 'vault',
+    })

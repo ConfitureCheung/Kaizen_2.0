@@ -51,10 +51,27 @@
                 <span class="building-tab-icon"><i class="fa-solid fa-gauge-high"></i></span>
                 <span class="building-tab-label">Dashboard</span>
             </a>
-            <a href="#" class="building-tab">
-                <span class="building-tab-icon"><i class="fa-solid fa-vault"></i></span>
-                <span class="building-tab-label">Vault</span>
-            </a>
+
+            <div class="building-tab dropdown-tab {% if building_tab == 'vault' %}active{% endif %}" id="vaultDropdownWrap">
+                <button type="button" class="building-tab-button" id="vaultDropdownToggle" aria-expanded="false" aria-haspopup="true">
+                    <span class="building-tab-icon"><i class="fa-solid fa-vault"></i></span>
+                    <span class="building-tab-label">Vault</span>
+                </button>
+
+                {% if selected_building %}
+                <div class="building-tab-dropdown" id="vaultDropdownMenu">
+                    <a href="{% url 'vault_trend_logs' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Trend Logs</span>
+                    </a>
+                    <a href="{% url 'vault_objects' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-regular fa-object-group"></i>
+                        <span>Objects</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
             <a href="#" class="building-tab">
                 <span class="building-tab-icon"><i class="fa-solid fa-circle-info"></i></span>
                 <span class="building-tab-label">Insights</span>
@@ -88,5 +105,45 @@
 
     <script src="{% static 'js/app.js' %}"></script>
     {% block extra_js %}{% endblock %}
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const wrap = document.getElementById("vaultDropdownWrap");
+        const toggle = document.getElementById("vaultDropdownToggle");
+        const menu = document.getElementById("vaultDropdownMenu");
+
+        if (wrap && toggle && menu) {
+            toggle.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const isOpen = menu.classList.contains("show");
+                menu.classList.toggle("show", !isOpen);
+                wrap.classList.toggle("open", !isOpen);
+                toggle.setAttribute("aria-expanded", !isOpen ? "true" : "false");
+            });
+
+            menu.addEventListener("click", function (e) {
+                e.stopPropagation();
+            });
+
+            document.addEventListener("click", function () {
+                menu.classList.remove("show");
+                wrap.classList.remove("open");
+                toggle.setAttribute("aria-expanded", "false");
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") {
+                    menu.classList.remove("show");
+                    wrap.classList.remove("open");
+                    toggle.setAttribute("aria-expanded", "false");
+                }
+            });
+        }
+    });
+    </script>
 </body>
+
+
 </html>
