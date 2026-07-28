@@ -10,16 +10,13 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.db.models.deletion import ProtectedError
 from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
 from django.core.exceptions import PermissionDenied
 
 from .models import Client, Building, ClientGroup, BuildingUser, BuildingDatabase
 from .models import COUNTRY_CHOICES, PARTNERSHIP_CHOICES, CURRENCY_CHOICES, TIMEZONE_CHOICES, BUILDING_TYPE_CHOICES, AREA_UNIT_CHOICES, WEATHER_UNIT_CHOICES
 from accounts.forms import UserProfileForm
 from accounts.models import UserProfile
-
-# from .views import get_sidebar_context, get_allowed_client_ids, get_allowed_client_ids, get_sidebar_context
-from .sidebar import get_allowed_client_ids, get_sidebar_context
+from .sidebar import get_allowed_client_ids, get_sidebar_context, get_active_client
 
 
 WEATHER_API_KEY = "e9877c4893e043fd8f632826262003"
@@ -28,41 +25,47 @@ GOOGLE_MAPS_API_KEY = "AIzaSyCwvTyOK-c-n0aO80xVtGfVejLuZRtb5Q0"
 PAGE_LIST = ["Dashboard", "Users", "Groups", "Buildings", "Clients", "Profile"]
 
 
+def _sidebar_ctx(request):
+    return get_sidebar_context(request.user, request)
+
+
+def _require_active_client(request):
+    client = get_active_client(request)
+    if client is None:
+        raise PermissionDenied
+    return client
+
+
+def _user_can_access_object_client(request, client_id):
+    allowed_ids = list(get_allowed_client_ids(request.user))
+    return client_id in allowed_ids
+
+
 @login_required
 def dashboard_view(request):
-    client_ids = get_allowed_client_ids(request.user)
+    client_ids = list(get_allowed_client_ids(request.user))
+    active_client = get_active_client(request)
 
-    selected_client_id = request.GET.get("client")
-    selected_client = None
+    if client_ids and active_client is None:
+        raise PermissionDenied
 
-    if selected_client_id:
-        try:
-            selected_client_id = int(selected_client_id)
-        except (TypeError, ValueError):
-            raise PermissionDenied
+    clients = Client.objects.filter(pk=active_client.pk).prefetch_related("buildings") if active_client else Client.objects.none()
+    selected_client = active_client
 
-        if selected_client_id not in client_ids:
-            raise PermissionDenied
-
-        clients = Client.objects.filter(id=selected_client_id).prefetch_related("buildings")
-        selected_client = clients.first()
-    else:
-        clients = Client.objects.filter(id__in=client_ids).prefetch_related("buildings")
-        selected_client = clients.order_by("pk").first()
-
-    # ── 1. Building Location: 1st building created per client ──────────────────
     first_buildings = []
-    for client in clients:
-        first_b = client.buildings.order_by("pk").first()
+    if selected_client:
+        first_b = selected_client.buildings.order_by("pk").first()
         if first_b:
             first_buildings.append(first_b)
 
     map_building = first_buildings[0] if first_buildings else None
 
-    # ── 2. Data Collection Device Status ──────────────────────────────────────
-    all_buildings = Building.objects.filter(
-        client_id__in=clients.values_list("id", flat=True)
-    ).select_related("building_database").order_by("pk")
+    all_buildings = (
+        Building.objects
+        .filter(client=selected_client)
+        .select_related("building_database", "client")
+        .order_by("pk")
+    ) if selected_client else Building.objects.none()
 
     device_status_rows = []
     any_offline = False
@@ -92,7 +95,6 @@ def dashboard_view(request):
             "connected": connected,
         })
 
-    # ── 3. Building Reports Count ──────────────────────────────────────────────
     building_report_counts = []
     for building in all_buildings:
         db = building.building_database
@@ -115,7 +117,6 @@ def dashboard_view(request):
                 "count": count,
             })
 
-    # ── 4. Latest 5 Reports ────────────────────────────────────────────────────
     latest_reports = []
     for building in all_buildings:
         db = building.building_database
@@ -148,7 +149,7 @@ def dashboard_view(request):
     latest_reports = latest_reports[:5]
 
     return render(request, "dashboard.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "clients": clients,
         "selected_client": selected_client,
         "map_building": map_building,
@@ -165,29 +166,39 @@ def dashboard_view(request):
 # USERS
 # ─────────────────────────────────────────────
 
-# ─── REPLACE users_view ───────────────────────────────────────────────────────
 @login_required
 def users_view(request):
-    client_ids = get_allowed_client_ids(request.user)
-    users = BuildingUser.objects.filter(client_id__in=client_ids).select_related("auth_user").prefetch_related("groups")
+    active_client = _require_active_client(request)
+    users = (
+        BuildingUser.objects
+        .filter(client=active_client)
+        .select_related("auth_user", "client")
+        .prefetch_related("groups")
+    )
     deleted_name = request.session.pop("user_deleted_name", None)
     return render(request, "core/users.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "users": users,
         "deleted_name": deleted_name,
     })
 
 
-# ─── ADD user_view_view (eye icon – read-only) ────────────────────────────────
 @login_required
 def user_view_view(request, pk):
-    user_obj = get_object_or_404(BuildingUser, pk=pk)
-    client_ids = get_allowed_client_ids(request.user)
-    groups = ClientGroup.objects.filter(client_id__in=client_ids)
+    user_obj = get_object_or_404(
+        BuildingUser.objects.select_related("client", "auth_user").prefetch_related("groups"),
+        pk=pk
+    )
+
+    if not _user_can_access_object_client(request, user_obj.client_id):
+        raise PermissionDenied
+
+    active_client = _require_active_client(request)
+    groups = ClientGroup.objects.filter(client=active_client)
     selected_group = user_obj.groups.first()
 
     return render(request, "core/user_detail.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "user_obj": user_obj,
         "groups": groups,
         "selected_group_id": selected_group.pk if selected_group else None,
@@ -197,15 +208,16 @@ def user_view_view(request, pk):
     })
 
 
-# ─── REPLACE user_detail_view (handles Add + Edit) ───────────────────────────
 @login_required
 def user_detail_view(request, pk=None):
     User = get_user_model()
-    user_obj = get_object_or_404(BuildingUser, pk=pk) if pk else None
+    user_obj = get_object_or_404(BuildingUser.objects.select_related("client", "auth_user"), pk=pk) if pk else None
 
-    client_ids = get_allowed_client_ids(request.user)
-    client = Client.objects.filter(id__in=client_ids).first()
-    groups = ClientGroup.objects.filter(client_id__in=client_ids)
+    if user_obj and not _user_can_access_object_client(request, user_obj.client_id):
+        raise PermissionDenied
+
+    active_client = user_obj.client if user_obj else _require_active_client(request)
+    groups = ClientGroup.objects.filter(client=active_client).order_by("name")
     selected_group = user_obj.groups.first() if user_obj else None
 
     if request.method == "POST":
@@ -232,7 +244,7 @@ def user_detail_view(request, pk=None):
 
         if errors:
             return render(request, "core/user_detail.html", {
-                **get_sidebar_context(request.user),
+                **_sidebar_ctx(request),
                 "user_obj": user_obj,
                 "groups": groups,
                 "selected_group_id": int(request.POST.get("group")) if request.POST.get("group") else None,
@@ -251,7 +263,7 @@ def user_detail_view(request, pk=None):
                 is_client_user=True,
             )
             user_obj = BuildingUser(
-                client=client,
+                client=active_client,
                 auth_user=auth_user,
                 full_name=f"{first_name} {last_name}".strip() or username,
                 email=email,
@@ -263,6 +275,7 @@ def user_detail_view(request, pk=None):
             auth_user.email = email
             auth_user.save()
 
+        user_obj.client = active_client
         user_obj.full_name = f"{first_name} {last_name}".strip() or username or auth_user.username
         user_obj.email = email
         user_obj.work_phone = request.POST.get("work_phone", "").strip()
@@ -284,16 +297,18 @@ def user_detail_view(request, pk=None):
 
         group_pk = request.POST.get("group")
         if group_pk:
-            group = ClientGroup.objects.filter(pk=group_pk, client_id__in=client_ids).first()
+            group = ClientGroup.objects.filter(pk=group_pk, client=active_client).first()
             if group:
                 user_obj.groups.set([group])
+            else:
+                user_obj.groups.clear()
         else:
             user_obj.groups.clear()
 
         return redirect("users")
 
     return render(request, "core/user_detail.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "user_obj": user_obj,
         "groups": groups,
         "selected_group_id": selected_group.pk if selected_group else None,
@@ -303,27 +318,35 @@ def user_detail_view(request, pk=None):
     })
 
 
-# ─── ADD user_delete_view ─────────────────────────────────────────────────────
 @login_required
 @require_POST
 def user_delete_view(request, pk):
     user_obj = get_object_or_404(BuildingUser, pk=pk)
-    deleted_name = user_obj.full_name or user_obj.auth_user.username
+
+    if not _user_can_access_object_client(request, user_obj.client_id):
+        raise PermissionDenied
+
+    deleted_name = user_obj.full_name or (user_obj.auth_user.username if user_obj.auth_user else "")
     if user_obj.auth_user:
         user_obj.auth_user.delete()
     else:
         user_obj.delete()
+
     request.session["user_deleted_name"] = deleted_name
     return redirect("users")
 
 
+# ─────────────────────────────────────────────
+# GROUPS
+# ─────────────────────────────────────────────
+
 @login_required
 def groups_view(request):
-    client_ids = get_allowed_client_ids(request.user)
-    groups = ClientGroup.objects.filter(client_id__in=client_ids)
+    active_client = _require_active_client(request)
+    groups = ClientGroup.objects.filter(client=active_client).order_by("name")
     deleted_name = request.session.pop("group_deleted_name", None)
     return render(request, "core/groups.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "groups": groups,
         "deleted_name": deleted_name,
     })
@@ -332,14 +355,16 @@ def groups_view(request):
 @login_required
 def group_detail_view(request):
     pk = request.GET.get("pk") or request.POST.get("pk")
-    group = get_object_or_404(ClientGroup, pk=pk) if pk else None
+    group = get_object_or_404(ClientGroup.objects.select_related("client"), pk=pk) if pk else None
 
-    client_ids = get_allowed_client_ids(request.user)
-    client = Client.objects.filter(id__in=client_ids).first()
+    if group and not _user_can_access_object_client(request, group.client_id):
+        raise PermissionDenied
 
-    if client is None:
+    active_client = group.client if group else _require_active_client(request)
+
+    if active_client is None:
         return render(request, "core/group_detail.html", {
-            **get_sidebar_context(request.user),
+            **_sidebar_ctx(request),
             "group": group,
             "page_list": PAGE_LIST,
             "no_client_error": True,
@@ -349,7 +374,7 @@ def group_detail_view(request):
         name = request.POST.get("name", "").strip()
         if not name:
             return render(request, "core/group_detail.html", {
-                **get_sidebar_context(request.user),
+                **_sidebar_ctx(request),
                 "group": group,
                 "page_list": PAGE_LIST,
                 "name_error": True,
@@ -358,23 +383,24 @@ def group_detail_view(request):
         perm_fields = {}
         for page in PAGE_LIST:
             key = page.lower()
-            perm_fields[f"read_{key}"]  = bool(request.POST.get(f"read_{key}"))
+            perm_fields[f"read_{key}"] = bool(request.POST.get(f"read_{key}"))
             perm_fields[f"write_{key}"] = bool(request.POST.get(f"write_{key}"))
-        perm_fields["can_read"]  = bool(request.POST.get("can_read_all"))
+        perm_fields["can_read"] = bool(request.POST.get("can_read_all"))
         perm_fields["can_write"] = bool(request.POST.get("can_write_all"))
 
         if not group:
-            group = ClientGroup.objects.create(client=client, name=name, **perm_fields)
+            group = ClientGroup.objects.create(client=active_client, name=name, **perm_fields)
             return redirect(reverse("group_saved", args=[group.pk]) + "?created=1")
         else:
             group.name = name
+            group.client = active_client
             for k, v in perm_fields.items():
                 setattr(group, k, v)
             group.save()
             return redirect("group_saved", pk=group.pk)
 
     return render(request, "core/group_detail.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "group": group,
         "page_list": PAGE_LIST,
     })
@@ -382,11 +408,15 @@ def group_detail_view(request):
 
 @login_required
 def group_saved_view(request, pk):
-    group = get_object_or_404(ClientGroup, pk=pk)
+    group = get_object_or_404(ClientGroup.objects.select_related("client"), pk=pk)
+
+    if not _user_can_access_object_client(request, group.client_id):
+        raise PermissionDenied
+
     members = group.users.select_related("auth_user").all()
     created = request.GET.get("created")
     return render(request, "core/group_saved.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "group": group,
         "members": members,
         "page_permissions": group.get_page_permissions(),
@@ -396,36 +426,39 @@ def group_saved_view(request, pk):
 
 @login_required
 def group_members_view(request, pk):
-    group = get_object_or_404(ClientGroup, pk=pk)
-    client_ids = get_allowed_client_ids(request.user)
+    group = get_object_or_404(ClientGroup.objects.select_related("client"), pk=pk)
 
-    # IDs of users already assigned to a DIFFERENT group
+    if not _user_can_access_object_client(request, group.client_id):
+        raise PermissionDenied
+
+    active_client = group.client
+
     other_group_user_ids = set(
         BuildingUser.objects
-        .filter(client_id__in=client_ids)
+        .filter(client=active_client)
         .exclude(groups__isnull=True)
         .exclude(groups=group)
         .values_list("pk", flat=True)
     )
 
-    all_users = BuildingUser.objects.filter(client_id__in=client_ids).prefetch_related("groups")
+    all_users = BuildingUser.objects.filter(client=active_client).prefetch_related("groups")
     current_member_ids = set(group.users.values_list("pk", flat=True))
 
     users_with_flags = []
     for u in all_users:
         users_with_flags.append({
-            "user":             u,
+            "user": u,
             "is_current_member": u.pk in current_member_ids,
-            "taken_by_other":   u.pk in other_group_user_ids,
+            "taken_by_other": u.pk in other_group_user_ids,
         })
 
     if request.method == "POST":
         selected_ids = request.POST.getlist("members")
-        group.users.set(BuildingUser.objects.filter(pk__in=selected_ids))
+        group.users.set(BuildingUser.objects.filter(pk__in=selected_ids, client=active_client))
         return redirect("groups")
 
     return render(request, "core/group_members.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "group": group,
         "users_with_flags": users_with_flags,
     })
@@ -435,15 +468,25 @@ def group_members_view(request, pk):
 @require_POST
 def group_delete_view(request, pk):
     group = get_object_or_404(ClientGroup, pk=pk)
+
+    if not _user_can_access_object_client(request, group.client_id):
+        raise PermissionDenied
+
     request.session["group_deleted_name"] = group.name
     group.delete()
     return redirect("groups")
 
 
-def _building_form_context(user, building=None, errors=None):
-    clients = Client.objects.filter(id__in=get_allowed_client_ids(user))
+# ─────────────────────────────────────────────
+# BUILDINGS
+# ─────────────────────────────────────────────
+
+def _building_form_context(request, building=None, errors=None):
+    active_client = building.client if building else get_active_client(request)
+    clients = Client.objects.filter(pk=active_client.pk) if active_client else Client.objects.none()
+
     return {
-        **get_sidebar_context(user),
+        **_sidebar_ctx(request),
         "building": building,
         "errors": errors or {},
         "clients": clients,
@@ -460,12 +503,11 @@ def _building_form_context(user, building=None, errors=None):
 
 @login_required
 def buildings_view(request):
-    buildings = Building.objects.filter(
-        client_id__in=get_allowed_client_ids(request.user)
-    ).select_related("client")
+    active_client = _require_active_client(request)
+    buildings = Building.objects.filter(client=active_client).select_related("client")
     deleted_name = request.session.pop("building_deleted_name", None)
     return render(request, "core/buildings.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "buildings": buildings,
         "deleted_name": deleted_name,
     })
@@ -473,7 +515,12 @@ def buildings_view(request):
 
 @login_required
 def building_detail_view(request, pk=None):
-    building = get_object_or_404(Building, pk=pk) if pk else None
+    building = get_object_or_404(Building.objects.select_related("client"), pk=pk) if pk else None
+
+    if building and not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
+
+    active_client = building.client if building else _require_active_client(request)
 
     if request.method == "POST":
         errors = {}
@@ -494,18 +541,20 @@ def building_detail_view(request, pk=None):
             errors["gross_floor_area"] = "Enter a valid number."
             gfa = None
 
-        client_id = request.POST.get("client_id")
-        client = Client.objects.filter(pk=client_id).first() if client_id else None
+        client = active_client
         if not client:
             errors["client"] = "Please select a client."
 
         if errors:
             class _Stub:
                 pass
+
             b = building or _Stub()
             for k, v in request.POST.items():
                 setattr(b, k, v)
-            ctx = _building_form_context(request.user, building=b, errors=errors)
+            setattr(b, "client", active_client)
+
+            ctx = _building_form_context(request, building=b, errors=errors)
             return render(request, "core/building_detail.html", ctx)
 
         def _float(key, default=None):
@@ -566,15 +615,19 @@ def building_detail_view(request, pk=None):
     return render(
         request,
         "core/building_detail.html",
-        _building_form_context(request.user, building=building)
+        _building_form_context(request, building=building)
     )
 
 
 @login_required
 def building_saved_view(request, pk):
-    building = get_object_or_404(Building, pk=pk)
+    building = get_object_or_404(Building.objects.select_related("client"), pk=pk)
+
+    if not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
+
     return render(request, "core/building_saved.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "building": building,
         "created": request.GET.get("created"),
     })
@@ -584,6 +637,10 @@ def building_saved_view(request, pk):
 @require_POST
 def building_delete_view(request, pk):
     building = get_object_or_404(Building, pk=pk)
+
+    if not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
+
     request.session["building_deleted_name"] = building.name
     building.delete()
     return redirect("buildings")
@@ -591,7 +648,10 @@ def building_delete_view(request, pk):
 
 @login_required
 def building_report_view(request, pk):
-    building = get_object_or_404(Building, pk=pk)
+    building = get_object_or_404(Building.objects.select_related("client", "building_database"), pk=pk)
+
+    if not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
 
     weather_data = None
     weather_error = None
@@ -628,7 +688,6 @@ def building_report_view(request, pk):
             conn = sqlite3.connect(db_path)
             cur = conn.cursor()
 
-            # current year
             cur.execute("""
                 SELECT month, SUM(kwh)
                 FROM energy_monthly
@@ -641,7 +700,6 @@ def building_report_view(request, pk):
                 if 1 <= m <= 12:
                     this_yr[m - 1] = float(v or 0)
 
-            # previous year
             cur.execute("""
                 SELECT month, SUM(kwh)
                 FROM energy_monthly
@@ -654,7 +712,6 @@ def building_report_view(request, pk):
                 if 1 <= m <= 12:
                     last_yr[m - 1] = float(v or 0)
 
-            # breakdown
             cur.execute("""
                 SELECT category, SUM(kwh)
                 FROM energy_breakdown
@@ -671,11 +728,10 @@ def building_report_view(request, pk):
             cur.close()
             conn.close()
         except Exception:
-            # swallow errors for now; you can log them later
             pass
 
     return render(request, "core/building_report.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "building": building,
         "weather_data": weather_data,
         "weather_error": weather_error,
@@ -687,16 +743,22 @@ def building_report_view(request, pk):
     })
 
 
+# ─────────────────────────────────────────────
+# CLIENTS
+# ─────────────────────────────────────────────
+
 @login_required
 def clients_view(request):
     if request.user.is_superuser or request.user.is_staff or request.user.is_provider:
-        clients = Client.objects.all()
+        clients = Client.objects.all().order_by("name")
     else:
-        clients = Client.objects.filter(memberships__user=request.user).distinct()
+        clients = Client.objects.filter(pk__in=get_allowed_client_ids(request.user)).distinct().order_by("name")
+
     deleted_name = request.session.pop("client_deleted_name", None)
     delete_error = request.session.pop("client_delete_error", None)
+
     return render(request, "core/clients.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "clients": clients,
         "deleted_name": deleted_name,
         "delete_error": delete_error,
@@ -707,6 +769,9 @@ def clients_view(request):
 @require_POST
 def client_delete_view(request, pk):
     client = get_object_or_404(Client, pk=pk)
+
+    if not (request.user.is_superuser or request.user.is_staff or request.user.is_provider):
+        raise PermissionDenied
 
     try:
         client_name = client.name
@@ -724,26 +789,34 @@ def client_delete_view(request, pk):
 
 @login_required
 def client_detail_view(request, pk=None):
+    if not (request.user.is_superuser or request.user.is_staff or request.user.is_provider):
+        raise PermissionDenied
+
     client = get_object_or_404(Client, pk=pk) if pk else None
+
     if request.method == "POST":
         name = request.POST.get("client_name", "").strip()
         if not name:
             return render(request, "core/client_detail.html", {
-                **get_sidebar_context(request.user),
-                "client": client, "country_choices": COUNTRY_CHOICES,
-                "partnership_choices": PARTNERSHIP_CHOICES, "name_error": True,
+                **_sidebar_ctx(request),
+                "client": client,
+                "country_choices": COUNTRY_CHOICES,
+                "partnership_choices": PARTNERSHIP_CHOICES,
+                "name_error": True,
             })
+
         data = {
             "name": name,
-            "address":     request.POST.get("client_address", "").strip(),
-            "city":        request.POST.get("client_city", "").strip(),
-            "state":       request.POST.get("client_state", "").strip(),
-            "postal":      request.POST.get("client_postal", "").strip(),
-            "country":     request.POST.get("client_country", "HK"),
+            "address": request.POST.get("client_address", "").strip(),
+            "city": request.POST.get("client_city", "").strip(),
+            "state": request.POST.get("client_state", "").strip(),
+            "postal": request.POST.get("client_postal", "").strip(),
+            "country": request.POST.get("client_country", "HK"),
             "partnership": request.POST.get("client_partnership", "skyforce"),
-            "phone":       request.POST.get("client_phone", "").strip(),
-            "fax":         request.POST.get("client_fax", "").strip(),
+            "phone": request.POST.get("client_phone", "").strip(),
+            "fax": request.POST.get("client_fax", "").strip(),
         }
+
         if client:
             for k, v in data.items():
                 setattr(client, k, v)
@@ -755,10 +828,11 @@ def client_detail_view(request, pk=None):
             if request.FILES.get("client_logo"):
                 client.logo = request.FILES["client_logo"]
             client.save()
+
         return redirect(reverse("client_saved", args=[client.pk]) + "?created=1")
 
     return render(request, "core/client_detail.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "client": client,
         "country_choices": COUNTRY_CHOICES,
         "partnership_choices": PARTNERSHIP_CHOICES,
@@ -768,13 +842,21 @@ def client_detail_view(request, pk=None):
 @login_required
 def client_saved_view(request, pk):
     client = get_object_or_404(Client, pk=pk)
+
+    if not (request.user.is_superuser or request.user.is_staff or request.user.is_provider):
+        raise PermissionDenied
+
     created = request.GET.get("created")
     return render(request, "core/client_saved.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "client": client,
         "created": created,
     })
 
+
+# ─────────────────────────────────────────────
+# PROFILE
+# ─────────────────────────────────────────────
 
 @login_required
 def profile_view(request):
@@ -798,7 +880,7 @@ def profile_view(request):
         form = UserProfileForm(instance=profile)
 
     return render(request, "accounts/profile.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "form": form,
         "profile": profile,
     })
@@ -859,18 +941,18 @@ def _user_can_access_building(user, building):
 
 @login_required
 def building_dashboard(request, building_id):
-    client_ids = get_allowed_client_ids(request.user)
-
     building = get_object_or_404(
         Building.objects.select_related("client"),
         pk=building_id
     )
 
-    if building.client_id not in client_ids:
+    if not _user_can_access_object_client(request, building.client_id):
         raise PermissionDenied
 
+    request.session["active_client_id"] = building.client_id
+
     return render(request, "core/building_dashboard.html", {
-        **get_sidebar_context(request.user),
+        **_sidebar_ctx(request),
         "selected_building": building,
         "selected_client": building.client,
         "building_tab": "dashboard",
