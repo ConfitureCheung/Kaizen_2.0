@@ -290,3 +290,4 @@ class BuildingUser(models.Model):
         return f"{self.client.name} / {self.full_name}"
 
 
+
