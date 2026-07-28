@@ -191,8 +191,8 @@ class BuildingDatabase(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Building Database (db_test)"
-        verbose_name_plural = "Building Databases (db_test)"
+        verbose_name = "Building Database"
+        verbose_name_plural = "Building Databases"
         ordering = ["-uploaded_at"]
 
     def __str__(self):
