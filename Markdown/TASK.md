@@ -1,57 +1,63 @@
 # TASK
 
 ## Current task
-Implement **client-scoped group pages** so that groups belong to a specific client and are not accessible or visible to users operating under a different client.
+Bring the **Django admin** into visual and behavioural consistency with the frontend portal view.
 
 ## Immediate objective
-Enforce a strict client-ownership boundary on the Group model and all related views, so that:
-- A group is always associated with exactly one client (via a `ForeignKey` to `Client`).
-- The groups list page only shows groups belonging to the currently active client context.
-- Group detail, edit, and member management pages reject requests from users whose active client does not own that group (return 403 or redirect).
-- Navigation (left panel tree and any group links) only surfaces groups under the correct client.
+The Django admin currently uses default Django admin styling and default `ModelAdmin` configuration. The goal is to make the admin UI a coherent extension of the BLENDY product so that admin users do not experience a jarring switch between two distinct visual and structural systems.
+
+Specific targets:
+- **Custom admin CSS** — override Django admin CSS variables (primary colour, font stack, border radius, card/table styles) with BLENDY design tokens in a new `static/css/admin_custom.css` file.
+- **Admin branding** — set `AdminSite.site_header`, `site_title`, and `index_title` to the BLENDY product name.
+- **`ModelAdmin` list display** — configure `list_display`, `list_filter`, `search_fields`, and `ordering` for all registered models to mirror the columns and filters shown in the frontend list views.
+- **`ModelAdmin` fieldsets** — organise detail/edit forms in the admin to match the field groupings in the frontend detail pages.
+- **Read-only and display fields** — surface computed/derived fields (e.g. group member count, building count per client) the same way they appear on the frontend.
+- **Admin actions** — add bulk actions (e.g. activate/deactivate users) consistent with the per-row actions on the frontend.
+- **Custom admin templates (optional)** — override `templates/admin/base_site.html` to inject the BLENDY logo and colour scheme into the admin shell using `{% block extrastyle %}`.
 
 ## Background from the previous step
-The sliding left panel interactive function is now complete:
-- Smooth CSS `transform: translateX()` open/close animation via the hamburger button.
-- Overlay backdrop with click-to-close behaviour.
-- Keyboard dismissal (`Escape` key).
-- Tree expand/collapse for the Client → Building hierarchy inside the panel.
-- Active state highlighting for the currently visited page item.
-
-All CSS changes lived in `static/css/app.css` and all JS logic in `static/js/app.js`. The panel HTML structure and context dependencies in `base.html` were not changed.
+The client-scoped group pages are now complete and production-ready:
+- `ClientGroup` model carries a `ForeignKey` to `Client`.
+- All Group views (`groups_view`, `group_detail_view`, `group_saved_view`, `group_members_view`, `group_delete_view`) filter querysets by the active client and enforce 403 guards.
+- Helper functions `get_active_client` and `get_allowed_client_ids` in `core/sidebar.py` are used as the single source-of-truth for client resolution.
+- Group templates iterate only over groups scoped to the active client.
 
 ## Scope for the next coding round
 
 **In scope:**
-- `myportal/core/models.py` — add a `client = ForeignKey(Client, on_delete=models.CASCADE, related_name='groups')` field to the `Group` model (or equivalent; confirm existing model name). Create and run the migration.
-- `myportal/core/views.py` — update all Group-related views (`groups`, `group_detail`, `group_saved`, `group_members`) to filter querysets by the active client and to validate ownership before rendering or mutating.
-- `myportal/templates/core/groups.html` — ensure the list only iterates over groups scoped to the current client.
-- `myportal/templates/core/group_detail.html`, `group_saved.html`, `group_members.html` — add guard context so a user from a different client cannot see or interact with the page content.
-- URL / permission helper (e.g. a `get_group_or_403` shortcut) — centralise the ownership check to avoid repeating it in every view.
+- `myportal/core/admin.py` — primary file for `ModelAdmin` list display, fieldsets, read-only fields, search, filters, ordering, and bulk actions for `Client`, `Building`, `ClientGroup`, `BuildingUser`, `BuildingDatabase`.
+- `myportal/accounts/admin.py` — custom user admin configuration for the `CustomUser` model (list display, search, filters, fieldsets).
+- `static/css/admin_custom.css` — new file; BLENDY design token overrides for Django admin CSS variables.
+- `templates/admin/base_site.html` — optional override for admin shell branding and CSS injection.
 
 **Out of scope for this round:**
-- Changes to Building, User, Client, or Dashboard views.
-- Modifying `static/css/app.css` or `static/js/app.js`.
-- Django admin customisation.
-- Redesigning the data model beyond the FK addition.
+- Any frontend template changes (`users.html`, `clients.html`, `groups.html`, `buildings.html`, etc.).
+- Changes to `static/css/app.css` or `static/js/app.js`.
+- Model changes or new migrations.
+- Refactoring of views, URLs, or forms.
 
 ## Starting point
-- Review `core/models.py` to confirm the current `Group` model definition and whether a client FK already exists.
-- Review `core/views.py` to map all views that query or mutate `Group` objects — these all need the client-scoping filter added.
-- Review `core/urls.py` to identify all Group-related URL patterns.
-- Check how the active client context is currently resolved (session variable, URL parameter, or user profile FK) — use the same mechanism for the ownership check.
-- Review `templates/core/groups.html` and related templates to understand current rendering so the scoping change does not break the UI.
+- Review `core/admin.py` and `accounts/admin.py` to audit current model registrations and identify gaps.
+- Reference each frontend list view for exact columns and filters to replicate:
+  - `users.html` → `BuildingUserAdmin`
+  - `clients.html` → `ClientAdmin`
+  - `groups.html` → `ClientGroupAdmin`
+  - `buildings.html` → `BuildingAdmin`
+- Reference each frontend detail page for field groupings to replicate as `fieldsets`:
+  - `user_detail.html`, `client_detail.html`, `group_detail.html`, `building_detail.html`
+- Check `static/css/app.css` for the BLENDY colour variables to port into `admin_custom.css`.
 
 ## Expected deliverables
-1. Migration file adding `client` FK to the `Group` model.
-2. Updated `core/views.py` with client-scoped querysets and 403 guards on all Group views.
-3. Updated Group templates reflecting the scoped data (no cross-client group links or entries visible).
-4. A reusable ownership-check helper (function or mixin) to keep the guard logic DRY.
-5. No unrelated architecture changes.
+1. Updated `core/admin.py` with fully configured `ModelAdmin` classes for all core models.
+2. Updated `accounts/admin.py` with a fully configured `CustomUserAdmin`.
+3. New `static/css/admin_custom.css` with BLENDY colour and typography overrides.
+4. Optional `templates/admin/base_site.html` for branding injection.
+5. No changes to any other files.
 
 ## Acceptance criteria
-- A group created under Client A does not appear in the groups list when the user is operating under Client B.
-- Directly navigating to a group URL belonging to Client A while operating as Client B returns a 403 or redirects gracefully.
-- Group creation form automatically associates the new group with the currently active client (no manual client selection required by the user).
-- Existing groups list, detail, and member management flows continue to work correctly for the owning client.
-- No changes to unrelated modules (`app.css`, buildings, dashboard, left panel).
+- Django admin list pages for Users, Clients, Groups, and Buildings show the same columns and filters as the corresponding frontend list pages.
+- Django admin detail pages group fields in the same logical sections as the frontend detail forms.
+- Admin colour scheme (primary, link, header) visually matches the BLENDY design tokens.
+- Admin site header reads "BLENDY" (or the current product name in `site_header`).
+- Existing model registrations are all preserved — nothing is removed.
+- `app.css` is untouched.
