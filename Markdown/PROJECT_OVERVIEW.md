@@ -3,14 +3,15 @@
 ## Current status
 The BLENDY Django project includes the `accounts` and `core` apps, shared authenticated templates, route wiring for dashboard, users, groups, buildings, clients, and profile, and a common visual system in `static/css/app.css`.
 The project is still intentionally hybrid: some screens are queryset-backed and some remain layout-first or sample-data driven while interface work progresses in stages.
-The shared navigation includes a functioning sliding left panel in `base.html` triggered by the hamburger button, rendering a Client → Building tree from queryset-backed context.
-The Profile page, Client pages, Groups pages, Users pages, and **Dashboard are all functionally complete**. The **next active focus is the sliding left panel interactive function**. Buildings pages remain deferred to a later stage.
+The shared navigation includes a fully interactive sliding left panel in `base.html` triggered by the hamburger button, rendering a Client → Building tree from queryset-backed context, with smooth CSS slide animation, overlay backdrop, keyboard dismissal, and tree expand/collapse.
+The Profile page, Client pages, Groups pages, Users pages, Dashboard, and **sliding left panel are all functionally complete**. The **next active focus is Django admin consistency with the frontend view**. Buildings pages remain deferred to a later stage.
 
 ## Existing structure relevant to the next step
-- `templates/base.html` contains the top bar, hamburger button, breadcrumb bar, page title, global icon navigation, and the sliding left panel — all shared across authenticated pages.
-- `static/css/app.css` already defines the app's visual language for cards, forms, banners, tables, buttons, and responsive behaviour.
-- `static/js/app.js` already contains shared interaction logic that can be extended for the panel.
-- The panel HTML structure and Client → Building tree rendering already exist in `base.html`; only JS and CSS work is needed.
+- `myportal/core/admin.py` — registers models with the Django admin site; the main file to customise for consistency.
+- `myportal/accounts/admin.py` — registers the custom user model with the Django admin site.
+- `templates/` — the existing frontend visual language (cards, forms, tables, colour tokens) is the reference target for admin styling.
+- `static/css/app.css` already defines the app's visual language; a custom admin CSS file can reference the same design tokens.
+- Django's built-in admin can be overridden using a custom `AdminSite`, `ModelAdmin` subclasses, and a `templates/admin/` override directory.
 
 ## Completed pages
 | Page area | Pages | Status |
@@ -22,20 +23,31 @@ The Profile page, Client pages, Groups pages, Users pages, and **Dashboard are a
 | Clients | `clients.html`, `client_detail.html`, `client_saved.html` | ✅ Functional |
 | Buildings | `buildings.html`, `building_detail.html`, `building_report.html` | 🔲 Layout-only (deferred) |
 | Dashboard | `dashboard.html` | ✅ Functional |
+| Left panel | Sliding panel in `base.html` | ✅ Functional |
 
-## Sliding left panel — current state
-The panel HTML structure in `base.html` and the Client → Building tree data rendering are already in place. The panel is rendered from queryset-backed context (`sidebar_clients`, `sidebar_profile`). What is missing is the full interactive behaviour: smooth open/close animation, overlay backdrop, keyboard dismissal, and tree expand/collapse.
+## Django admin consistency — planned work
+The goal is to bring the Django admin UI into visual and behavioural alignment with the frontend view, so that admin users experience a coherent product rather than switching between two distinct visual systems.
 
-## Sliding left panel — planned functional behaviour
-- **Open/close toggle** — hamburger button triggers a smooth CSS slide-in/out animation.
-- **Overlay backdrop** — a semi-transparent overlay appears behind the panel when open; clicking it closes the panel.
+Planned work includes:
+
+- **Custom admin CSS** — override Django admin colour variables and typography to match the BLENDY design tokens (primary colour, font stack, border radius, card/table styles).
+- **`ModelAdmin` list display** — configure `list_display`, `list_filter`, `search_fields`, and `ordering` for all registered models to mirror the columns and filters visible in the frontend list views.
+- **`ModelAdmin` fieldsets** — organise detail/edit forms in the admin to match the field groupings used in the frontend detail pages.
+- **Read-only and display fields** — surface computed or derived fields (e.g. group member count, building count per client) in the admin list the same way they appear in the frontend.
+- **Admin actions** — add bulk actions (e.g. activate/deactivate users) consistent with the per-row actions available in the frontend.
+- **Admin branding** — set `AdminSite.site_header`, `site_title`, and `index_title` to match the BLENDY product name.
+- **Custom admin templates (optional)** — override `templates/admin/base_site.html` to inject the BLENDY logo and colour scheme into the admin shell.
+
+## Sliding left panel — completed state
+The full interactive behaviour has been implemented:
+- **Open/close toggle** — hamburger button triggers a smooth CSS `transform: translateX()` slide-in/out animation.
+- **Overlay backdrop** — semi-transparent overlay appears behind the panel when open; clicking it closes the panel.
 - **Keyboard dismissal** — pressing `Escape` closes the panel.
-- **Tree expand/collapse** — clients in the panel can be expanded or collapsed to reveal their buildings.
-- **Active state highlighting** — the currently active page item is highlighted in the tree.
-- **Persistent state (optional)** — open/closed state optionally preserved across page navigation.
+- **Tree expand/collapse** — client rows in the panel expand and collapse to show/hide their buildings.
+- **Active state highlighting** — the currently visited page's building or client is visually highlighted in the tree.
 
 ## Dashboard page — completed state
-`dashboard.html` is now fully connected to real queryset-backed data:
+`dashboard.html` is fully connected to real queryset-backed data:
 - **Summary KPI cards** — live counts for active users, clients, buildings, and groups.
 - **Recent activity feed** — most recently created or updated records across key models.
 - **Client → Building overview** — summary table consistent with the left panel hierarchy.
@@ -55,15 +67,16 @@ All four Groups screens are fully functional:
 - **`group_members.html`** — member-selection screen with checkbox table and POST membership update.
 
 ## Buildings pages — deferred state
-The three Buildings screens remain layout-only or sample-data driven. Their functional wiring is intentionally deferred until after the sliding left panel work is complete:
+The three Buildings screens remain layout-only or sample-data driven. Their functional wiring is intentionally deferred:
 - **`buildings.html`** — list view, not yet queryset-backed.
 - **`building_detail.html`** — detail/form view, not yet wired to POST handling or database save logic.
 - **`building_report.html`** — report view, not yet pulling real data or rendering live charts.
 
 ## Files most relevant for the next step
-- `templates/base.html` — panel HTML structure, hamburger button, overlay element.
-- `static/css/app.css` — panel slide animation, overlay styles, tree expand/collapse transitions.
-- `static/js/app.js` — open/close toggle, overlay click handler, Escape key handler, tree expand/collapse logic.
+- `myportal/core/admin.py` — primary file for `ModelAdmin` list display, fieldsets, and actions.
+- `myportal/accounts/admin.py` — custom user admin configuration.
+- `static/css/admin_custom.css` — new file for BLENDY design token overrides targeting Django admin CSS variables.
+- `templates/admin/base_site.html` — optional override for admin shell branding.
 
 ## Project guardrails
 - Keep changes targeted.
