@@ -1,63 +1,58 @@
 # TASK
 
 ## Current task
-Bring the **Django admin** into visual and behavioural consistency with the frontend portal view.
+Build the **Vault section** — Trend Logs (`trend_log.html`) and Objects (`objects.html`) pages.
 
 ## Immediate objective
-The Django admin currently uses default Django admin styling and default `ModelAdmin` configuration. The goal is to make the admin UI a coherent extension of the BLENDY product so that admin users do not experience a jarring switch between two distinct visual and structural systems.
+Create two new building-scoped list-view pages that read data directly from the per-building SQLite database (linked via `BuildingDatabase.db_file`) using raw `sqlite3` connections — no new Django models or migrations. Both pages must fit seamlessly into the existing BLENDY portal shell and visual language.
 
 Specific targets:
-- **Custom admin CSS** — override Django admin CSS variables (primary colour, font stack, border radius, card/table styles) with BLENDY design tokens in a new `static/css/admin_custom.css` file.
-- **Admin branding** — set `AdminSite.site_header`, `site_title`, and `index_title` to the BLENDY product name.
-- **`ModelAdmin` list display** — configure `list_display`, `list_filter`, `search_fields`, and `ordering` for all registered models to mirror the columns and filters shown in the frontend list views.
-- **`ModelAdmin` fieldsets** — organise detail/edit forms in the admin to match the field groupings in the frontend detail pages.
-- **Read-only and display fields** — surface computed/derived fields (e.g. group member count, building count per client) the same way they appear on the frontend.
-- **Admin actions** — add bulk actions (e.g. activate/deactivate users) consistent with the per-row actions on the frontend.
-- **Custom admin templates (optional)** — override `templates/admin/base_site.html` to inject the BLENDY logo and colour scheme into the admin shell using `{% block extrastyle %}`.
+- **`trend_log_view`** in `core/views.py` — resolves the active building from the URL (`building_pk`), opens the linked SQLite database with `sqlite3`, queries the Trend Log table, and passes rows + column names to the template as context. Gracefully handles the no-database case.
+- **`objects_view`** in `core/views.py` — same pattern as above but queries the Objects table.
+- **`trend_log.html`** — list-view template extending `base.html`. Table columns: name, description, object reference, units, timestamps. Top search/filter bar. Empty state if no database is linked. Consistent with `users.html` / `clients.html` visual pattern.
+- **`objects.html`** — list-view template extending `base.html`. Table columns: object type, instance, name, description, present value, units. Top search/filter bar. Empty state if no database is linked. Consistent with same visual pattern.
+- **URL patterns** — add `/vault/<int:building_pk>/trend-logs/` and `/vault/<int:building_pk>/objects/` to `core/urls.py`.
 
 ## Background from the previous step
-The client-scoped group pages are now complete and production-ready:
-- `ClientGroup` model carries a `ForeignKey` to `Client`.
-- All Group views (`groups_view`, `group_detail_view`, `group_saved_view`, `group_members_view`, `group_delete_view`) filter querysets by the active client and enforce 403 guards.
-- Helper functions `get_active_client` and `get_allowed_client_ids` in `core/sidebar.py` are used as the single source-of-truth for client resolution.
-- Group templates iterate only over groups scoped to the active client.
+Django admin consistency is now complete:
+- `core/admin.py` has fully configured `ModelAdmin` classes for `Client`, `ClientGroup`, `Building`, `BuildingUser`, and `BuildingDatabase` with `list_display`, `list_filter`, `search_fields`, `fieldsets`, `readonly_fields`, display helpers, and `save_model` overrides.
+- `static/css/admin_custom.css` applies BLENDY design tokens to Django admin CSS variables.
+- Admin branding (`site_header`, `site_title`, `index_title`) is set.
+- `accounts/admin.py` is configured for the custom user model.
 
 ## Scope for the next coding round
 
 **In scope:**
-- `myportal/core/admin.py` — primary file for `ModelAdmin` list display, fieldsets, read-only fields, search, filters, ordering, and bulk actions for `Client`, `Building`, `ClientGroup`, `BuildingUser`, `BuildingDatabase`.
-- `myportal/accounts/admin.py` — custom user admin configuration for the `CustomUser` model (list display, search, filters, fieldsets).
-- `static/css/admin_custom.css` — new file; BLENDY design token overrides for Django admin CSS variables.
-- `templates/admin/base_site.html` — optional override for admin shell branding and CSS injection.
+- `myportal/core/views.py` — add `trend_log_view` and `objects_view`.
+- `myportal/core/urls.py` — add URL patterns for both new views under `/vault/<building_pk>/`.
+- `templates/vault/trend_log.html` — new Trend Logs list template (or `templates/trend_log.html` if flat template layout is preferred).
+- `templates/vault/objects.html` — new Objects list template.
 
 **Out of scope for this round:**
-- Any frontend template changes (`users.html`, `clients.html`, `groups.html`, `buildings.html`, etc.).
+- Any changes to `admin.py` files or `admin_custom.css`.
 - Changes to `static/css/app.css` or `static/js/app.js`.
-- Model changes or new migrations.
-- Refactoring of views, URLs, or forms.
+- New Django models or migrations.
+- Refactoring of existing views, URLs, or forms.
+- Buildings, Dashboard, Groups, Users, Clients, Profile pages.
 
 ## Starting point
-- Review `core/admin.py` and `accounts/admin.py` to audit current model registrations and identify gaps.
-- Reference each frontend list view for exact columns and filters to replicate:
-  - `users.html` → `BuildingUserAdmin`
-  - `clients.html` → `ClientAdmin`
-  - `groups.html` → `ClientGroupAdmin`
-  - `buildings.html` → `BuildingAdmin`
-- Reference each frontend detail page for field groupings to replicate as `fieldsets`:
-  - `user_detail.html`, `client_detail.html`, `group_detail.html`, `building_detail.html`
-- Check `static/css/app.css` for the BLENDY colour variables to port into `admin_custom.css`.
+- Review `core/models.py` to confirm the `BuildingDatabase` model fields — specifically `db_file` (the SQLite file path) and its relation to `Building`.
+- Review `users.html` and `clients.html` for the exact list-view HTML/CSS pattern to replicate in the new templates.
+- Review `core/views.py` for the existing view signature conventions (login_required, client resolution, context dict structure).
+- The building SQLite database has its own internal schema; inspect the actual `.sqlite3` file (or `create_sample_building_db.py`) to confirm the Trend Log and Objects table names and columns before writing queries.
 
 ## Expected deliverables
-1. Updated `core/admin.py` with fully configured `ModelAdmin` classes for all core models.
-2. Updated `accounts/admin.py` with a fully configured `CustomUserAdmin`.
-3. New `static/css/admin_custom.css` with BLENDY colour and typography overrides.
-4. Optional `templates/admin/base_site.html` for branding injection.
+1. Updated `core/views.py` with `trend_log_view` and `objects_view`.
+2. Updated `core/urls.py` with two new URL patterns under `/vault/<building_pk>/`.
+3. New `templates/vault/trend_log.html` — Trend Logs list page.
+4. New `templates/vault/objects.html` — Objects list page.
 5. No changes to any other files.
 
 ## Acceptance criteria
-- Django admin list pages for Users, Clients, Groups, and Buildings show the same columns and filters as the corresponding frontend list pages.
-- Django admin detail pages group fields in the same logical sections as the frontend detail forms.
-- Admin colour scheme (primary, link, header) visually matches the BLENDY design tokens.
-- Admin site header reads "BLENDY" (or the current product name in `site_header`).
-- Existing model registrations are all preserved — nothing is removed.
-- `app.css` is untouched.
+- Both pages render inside the shared BLENDY shell (navbar, breadcrumb, left panel) correctly.
+- Table data is populated from the linked building SQLite database via raw `sqlite3` queries.
+- If no `BuildingDatabase` is linked to the building, an informative empty-state card is shown instead of an error.
+- Search/filter bar visually present and consistent with other list views (functional filtering is a bonus; static bar is acceptable for the first iteration).
+- URL patterns follow the convention `/vault/<building_pk>/trend-logs/` and `/vault/<building_pk>/objects/`.
+- No regressions in any existing pages.
+- `app.css` and all admin files are untouched.
