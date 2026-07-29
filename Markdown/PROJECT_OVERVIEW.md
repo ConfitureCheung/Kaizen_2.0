@@ -1,17 +1,16 @@
 # PROJECT OVERVIEW
 
 ## Current status
-The BLENDY Django project includes the `accounts` and `core` apps, shared authenticated templates, route wiring for dashboard, users, groups, buildings, clients, and profile, and a common visual system in `static/css/app.css`.
+The BLENDY Django project includes the `accounts` and `core` apps, shared authenticated templates, route wiring for dashboard, users, groups, buildings, clients, profile, and the Vault section, and a common visual system in `static/css/app.css`.
 The project is still intentionally hybrid: some screens are queryset-backed and some remain layout-first or sample-data driven while interface work progresses in stages.
 The shared navigation includes a fully interactive sliding left panel in `base.html` triggered by the hamburger button, rendering a Client → Building tree from queryset-backed context, with smooth CSS slide animation, overlay backdrop, keyboard dismissal, and tree expand/collapse.
-The Profile page, Client pages, Groups pages (fully client-scoped), Users pages, Dashboard, sliding left panel, and **Django admin consistency are all functionally complete**. The **next active focus is the Vault section** — `trend_log.html` (Trend Logs) and `objects.html` (Objects). Buildings pages remain deferred to a later stage.
+The Profile page, Client pages, Groups pages (fully client-scoped), Users pages, Dashboard, sliding left panel, Django admin consistency, and **Vault section (Trend Logs + Objects) are all functionally complete**. The **next active focus is the Insight section** — five new pages: `insight_management.html`, `create_insight_report.html`, `manage_rules.html`, `golden_standard_configuration.html`, and `insight_subscription.html`. Buildings pages remain deferred to a later stage.
 
 ## Existing structure relevant to the next step
-- `myportal/core/views.py` — add `trend_log_view` and `objects_view` for the Vault section.
-- `myportal/core/urls.py` — add URL patterns under `/vault/<building_pk>/`.
-- `myportal/core/models.py` — `BuildingDatabase` model provides the path to the per-building SQLite file.
-- `templates/` — all new Vault templates must extend `base.html` and follow the existing list-view visual pattern.
-- `static/css/app.css` already defines the app's visual language; no new CSS files are needed for Vault pages.
+- `myportal/core/views.py` — add five Insight view stubs.
+- `myportal/core/urls.py` — add URL patterns under `/insight/`.
+- `myportal/templates/core/` — all new Insight templates live here, extending `base.html` or `base2.html`.
+- `static/css/app.css` already defines the app's visual language; no new CSS files are needed for Insight pages.
 
 ## Completed pages
 | Page area | Pages | Status |
@@ -25,18 +24,27 @@ The Profile page, Client pages, Groups pages (fully client-scoped), Users pages,
 | Dashboard | `dashboard.html` | ✅ Functional |
 | Left panel | Sliding panel in `base.html` | ✅ Functional |
 | Django admin | `core/admin.py`, `accounts/admin.py`, `admin_custom.css` | ✅ Complete |
-| Vault | `trend_log.html`, `objects.html` | 🔲 In progress (next) |
+| Vault | `trend_log.html`, `objects.html` | ✅ Complete |
+| Insight | `insight_management.html`, `create_insight_report.html`, `manage_rules.html`, `golden_standard_configuration.html`, `insight_subscription.html` | 🔲 In progress (next) |
 
-## Vault section — planned work
-The Vault is a building-scoped data viewer that reads directly from the per-building SQLite database linked via `BuildingDatabase.db_file`. It does not use Django ORM models for the building data — all queries are raw `sqlite3` connections.
+## Insight section — planned work
+The Insight section introduces the analytics and rules engine layer of the BLENDY portal. The first stage is layout-only using static/sample data; backend wiring follows in a subsequent step.
 
-Planned work includes:
+Planned pages:
 
-- **`trend_log_view`** — opens the building SQLite database, queries the Trend Log table, and passes records to `trend_log.html` as context. Handles the no-database case with an empty state.
-- **`objects_view`** — opens the building SQLite database, queries the Objects table, and passes records to `objects.html` as context. Handles the no-database case with an empty state.
-- **`trend_log.html`** — list-view template extending `base.html`. Shows a searchable/filterable table of trend log entries: name, description, object reference, units, and timestamps. Follows the `users.html` / `clients.html` visual pattern.
-- **`objects.html`** — list-view template extending `base.html`. Shows a searchable/filterable table of BACnet objects: object type, instance, name, description, present value, and units. Follows the same visual pattern.
-- **URL patterns** — `/vault/<int:building_pk>/trend-logs/` and `/vault/<int:building_pk>/objects/` added to `core/urls.py`.
+- **`insight_management.html`** — section landing page. Lists existing insight reports as summary cards or table rows (title, building, rule count, last run, status). Provides entry points to create a new report or manage existing ones.
+- **`create_insight_report.html`** — form/wizard page to create a new Insight Report. Captures report name, linked building, date range, and selected rule sets.
+- **`manage_rules.html`** — rule management list page. Displays all insight rules (name, description, category, severity, active/inactive). Allows toggling, editing, or adding rules.
+- **`golden_standard_configuration.html`** — configuration page for Golden Standard reference values. Sets expected setpoints, thresholds, and acceptable ranges per building or object type, used as the benchmark for rule evaluation.
+- **`insight_subscription.html`** — subscription management page. Users subscribe or unsubscribe to scheduled report deliveries, configure frequency (daily/weekly/monthly), and manage recipient lists.
+
+## Vault section — completed state
+The Vault section is fully implemented:
+- **`trend_log_view`** — resolves the active building from `building_pk`, opens the linked SQLite database with raw `sqlite3`, queries the Trend Log table, and passes rows to the template. Handles the no-database case with an empty-state card.
+- **`objects_view`** — same pattern, queries the Objects table.
+- **`trend_log.html`** — list-view template extending `base2.html`. Filterable/searchable table of trend log entries with sub-navigation tabs for the Vault section.
+- **`objects.html`** — split-panel list/detail template extending `base2.html`. Left panel shows a searchable list of BACnet objects; right panel shows the selected object's field details.
+- **URL patterns** — `/vault/<int:building_pk>/trend-logs/` and `/vault/<int:building_pk>/objects/` are registered in `core/urls.py`.
 
 ## Django admin — completed state
 Django admin is now fully consistent with the frontend portal view:
@@ -80,11 +88,13 @@ The three Buildings screens remain layout-only or sample-data driven. Their func
 - **`building_report.html`** — report view, not yet pulling real data or rendering live charts.
 
 ## Files most relevant for the next step
-- `myportal/core/views.py` — add `trend_log_view` and `objects_view`.
-- `myportal/core/urls.py` — add `/vault/<building_pk>/` URL patterns.
-- `templates/vault/trend_log.html` — new Trend Logs list template.
-- `templates/vault/objects.html` — new Objects list template.
-- `myportal/core/models.py` — reference `BuildingDatabase` for `db_file` path.
+- `myportal/core/views.py` — add five Insight view stubs.
+- `myportal/core/urls.py` — add URL patterns under `/insight/`.
+- `myportal/templates/core/insight_management.html` — new Insight landing page.
+- `myportal/templates/core/create_insight_report.html` — new Create Report form page.
+- `myportal/templates/core/manage_rules.html` — new Rules management list page.
+- `myportal/templates/core/golden_standard_configuration.html` — new Golden Standard config page.
+- `myportal/templates/core/insight_subscription.html` — new Subscription management page.
 
 ## Project guardrails
 - Keep changes targeted.
