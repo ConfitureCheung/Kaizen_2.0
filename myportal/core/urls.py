@@ -49,6 +49,12 @@ urlpatterns = [
     path('buildings/<int:pk>/insights/golden-standard/', views.golden_standard_configuration,
          name='golden_standard_configuration'),
     path('buildings/<int:pk>/insights/subscription/', views.insight_subscription, name='insight_subscription'),
+
+    # ── Energy ──
+    path("buildings/<int:pk>/energy/", views.building_energy, name="building_energy"),
+
+    # ── Reports ──
+    path("buildings/<int:pk>/reports/", views.building_reports, name="building_reports"),
 ]
 
 

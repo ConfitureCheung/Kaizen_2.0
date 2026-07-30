@@ -73,10 +73,6 @@
                 {% endif %}
             </div>
 
-<!--            <a href="#" class="building-tab">-->
-<!--                <span class="building-tab-icon"><i class="fa-solid fa-circle-info"></i></span>-->
-<!--                <span class="building-tab-label">Insights</span>-->
-<!--            </a>-->
             {# ── Insights dropdown ── #}
             <div class="building-tab dropdown-tab {% if building_tab == 'insights' %}active{% endif %}" id="insightsDropdownWrap">
                 <button type="button" class="building-tab-button" id="insightsDropdownToggle" aria-expanded="false" aria-haspopup="true">
@@ -110,14 +106,25 @@
                 {% endif %}
             </div>
 
-            <a href="#" class="building-tab">
+<!--            <a href="#" class="building-tab">-->
+<!--                <span class="building-tab-icon"><i class="fa-solid fa-bolt"></i></span>-->
+<!--                <span class="building-tab-label">Energy</span>-->
+<!--            </a>-->
+<!--            <a href="#" class="building-tab">-->
+<!--                <span class="building-tab-icon"><i class="fa-regular fa-file-lines"></i></span>-->
+<!--                <span class="building-tab-label">Reports</span>-->
+<!--            </a>-->
+
+            <a href="{% url 'building_energy' selected_building.pk %}" class="building-tab {% if building_tab == 'energy' %}active{% endif %}">
                 <span class="building-tab-icon"><i class="fa-solid fa-bolt"></i></span>
                 <span class="building-tab-label">Energy</span>
             </a>
-            <a href="#" class="building-tab">
+
+            <a href="{% url 'building_reports' selected_building.pk %}" class="building-tab {% if building_tab == 'reports' %}active{% endif %}">
                 <span class="building-tab-icon"><i class="fa-regular fa-file-lines"></i></span>
                 <span class="building-tab-label">Reports</span>
             </a>
+
             <a href="#" class="building-tab">
                 <span class="building-tab-icon"><i class="fa-solid fa-chart-column"></i></span>
                 <span class="building-tab-label">Charts</span>

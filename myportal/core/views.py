@@ -1024,3 +1024,37 @@ def insight_subscription(request, pk):
         'selected_building': building,
         'building_tab': 'insights',
     })
+
+
+# ─────────────────────────────────────────────
+# ENERGY
+# ─────────────────────────────────────────────
+
+@login_required
+def building_energy(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(
+        request,
+        "core/energy.html",
+        {
+            "selected_building": building,
+            "building_tab": "energy",
+        },
+    )
+
+
+# ─────────────────────────────────────────────
+# REPORTS
+# ─────────────────────────────────────────────
+
+@login_required
+def building_reports(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(
+        request,
+        "core/report.html",
+        {
+            "selected_building": building,
+            "building_tab": "reports",
+        },
+    )
