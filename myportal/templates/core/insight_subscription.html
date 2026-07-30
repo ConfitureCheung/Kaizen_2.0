@@ -1,0 +1,289 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Insights – Insight Subscription{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Insights: Subscriptions{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Insights{% endblock %}
+
+{% block extra_css %}
+<style>
+.sub-page {
+    margin: 0;
+    background: #efefef;
+}
+
+.sub-section {
+    margin: 10px 0 0;
+    border: 1px solid #d7d7d7;
+    background: #f6f6f6;
+}
+
+.sub-section-header {
+    padding: 9px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    background: #f2f2f2;
+    border-bottom: 1px solid #dddddd;
+}
+
+.sub-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 13px;
+    background: #f6f6f6;
+}
+
+.sub-table thead th {
+    text-align: left;
+    font-weight: 700;
+    color: #444;
+    padding: 8px 12px;
+    border-bottom: 1px solid #dddddd;
+    background: #f6f6f6;
+}
+
+.sub-table thead th:nth-child(1) { width: 58%; }
+.sub-table thead th:nth-child(2) { width: 14%; text-align: center; }
+.sub-table thead th:nth-child(3) { width: 16%; text-align: center; }
+.sub-table thead th:nth-child(4) { width: 12%; text-align: center; }
+
+.sub-table tbody tr {
+    border-bottom: 1px solid #e3e3e3;
+}
+
+.sub-table tbody td {
+    padding: 6px 12px;
+    color: #444;
+    vertical-align: middle;
+}
+
+.sub-table tbody td:nth-child(2),
+.sub-table tbody td:nth-child(3),
+.sub-table tbody td:nth-child(4) {
+    text-align: center;
+}
+
+.sub-checkbox {
+    width: 16px;
+    height: 16px;
+}
+
+.sub-frequency {
+    width: 100%;
+    max-width: 240px;
+    height: 28px;
+    border: 1px solid #cfcfcf;
+    border-radius: 3px;
+    background: #ececec;
+    color: #666;
+    font-size: 13px;
+    padding: 0 8px;
+    outline: none;
+}
+
+.sub-save-row {
+    display: flex;
+    justify-content: center;
+    padding: 14px 0;
+}
+
+.sub-save-btn {
+    min-width: 72px;
+    height: 20px;
+    border: none;
+    border-radius: 3px;
+    background: #e87722;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    padding: 0 12px;
+}
+
+.sub-save-btn:hover {
+    background: #d36a1b;
+}
+
+.sub-save-btn i {
+    font-size: 11px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sub-page">
+
+    <div class="sub-section">
+        <div class="sub-section-header">CopperTree Views</div>
+        <table class="sub-table">
+            <thead>
+                <tr>
+                    <th>View name</th>
+                    <th>Subscribe</th>
+                    <th>Exclude if no insights</th>
+                    <th>Frequency</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Default</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Default Classic</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Golden Standard By Rule</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Infrastructure by Rule</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>FDD Insights by Rule Template</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Insights by System</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Edge Device</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Energy KPI</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>CT Managed Services Active</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="sub-section">
+        <div class="sub-section-header">User-Defined Views</div>
+        <table class="sub-table">
+            <thead>
+                <tr>
+                    <th>View name</th>
+                    <th>Subscribe</th>
+                    <th>Exclude if no insights</th>
+                    <th>Frequency</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>instruction report</td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td><input class="sub-checkbox" type="checkbox"></td>
+                    <td>
+                        <select class="sub-frequency">
+                            <option value=""></option>
+                            <option>Daily</option>
+                            <option>Weekly</option>
+                            <option>Monthly</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="sub-save-row">
+            <button class="sub-save-btn" type="button" title="Save">
+                <i class="fa-solid fa-floppy-disk"></i>
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

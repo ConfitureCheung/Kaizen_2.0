@@ -52,6 +52,7 @@
                 <span class="building-tab-label">Dashboard</span>
             </a>
 
+            {# ── Vault dropdown ── #}
             <div class="building-tab dropdown-tab {% if building_tab == 'vault' %}active{% endif %}" id="vaultDropdownWrap">
                 <button type="button" class="building-tab-button" id="vaultDropdownToggle" aria-expanded="false" aria-haspopup="true">
                     <span class="building-tab-icon"><i class="fa-solid fa-vault"></i></span>
@@ -72,10 +73,43 @@
                 {% endif %}
             </div>
 
-            <a href="#" class="building-tab">
-                <span class="building-tab-icon"><i class="fa-solid fa-circle-info"></i></span>
-                <span class="building-tab-label">Insights</span>
-            </a>
+<!--            <a href="#" class="building-tab">-->
+<!--                <span class="building-tab-icon"><i class="fa-solid fa-circle-info"></i></span>-->
+<!--                <span class="building-tab-label">Insights</span>-->
+<!--            </a>-->
+            {# ── Insights dropdown ── #}
+            <div class="building-tab dropdown-tab {% if building_tab == 'insights' %}active{% endif %}" id="insightsDropdownWrap">
+                <button type="button" class="building-tab-button" id="insightsDropdownToggle" aria-expanded="false" aria-haspopup="true">
+                    <span class="building-tab-icon"><i class="fa-solid fa-circle-info"></i></span>
+                    <span class="building-tab-label">Insights</span>
+                </button>
+
+                {% if selected_building %}
+                <div class="building-tab-dropdown" id="insightsDropdownMenu">
+                    <a href="{% url 'insight_management' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-solid fa-table-list"></i>
+                        <span>Insight Management</span>
+                    </a>
+                    <a href="{% url 'create_insight_report' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-regular fa-file-lines"></i>
+                        <span>Create Insight Report</span>
+                    </a>
+                    <a href="{% url 'manage_rules' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>Manage Rules</span>
+                    </a>
+                    <a href="{% url 'golden_standard_configuration' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-solid fa-star"></i>
+                        <span>Golden Standard Configuration</span>
+                    </a>
+                    <a href="{% url 'insight_subscription' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-solid fa-bell"></i>
+                        <span>Insight Subscription</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
             <a href="#" class="building-tab">
                 <span class="building-tab-icon"><i class="fa-solid fa-bolt"></i></span>
                 <span class="building-tab-label">Energy</span>
@@ -141,6 +175,74 @@
                 }
             });
         }
+    });
+    </script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        function initDropdown(wrapId, toggleId, menuId) {
+            const wrap = document.getElementById(wrapId);
+            const toggle = document.getElementById(toggleId);
+            const menu = document.getElementById(menuId);
+
+            if (!wrap || !toggle || !menu) return;
+
+            toggle.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const isOpen = menu.classList.contains("show");
+
+                document.querySelectorAll(".building-tab-dropdown.show").forEach(openMenu => {
+                    openMenu.classList.remove("show");
+                });
+                document.querySelectorAll(".dropdown-tab.open").forEach(openWrap => {
+                    openWrap.classList.remove("open");
+                });
+                document.querySelectorAll(".building-tab-button[aria-expanded='true']").forEach(openBtn => {
+                    openBtn.setAttribute("aria-expanded", "false");
+                });
+
+                if (!isOpen) {
+                    menu.classList.add("show");
+                    wrap.classList.add("open");
+                    toggle.setAttribute("aria-expanded", "true");
+                }
+            });
+
+            menu.addEventListener("click", function (e) {
+                e.stopPropagation();
+            });
+        }
+
+        initDropdown("vaultDropdownWrap", "vaultDropdownToggle", "vaultDropdownMenu");
+        initDropdown("insightsDropdownWrap", "insightsDropdownToggle", "insightsDropdownMenu");
+
+        document.addEventListener("click", function () {
+            document.querySelectorAll(".building-tab-dropdown.show").forEach(menu => {
+                menu.classList.remove("show");
+            });
+            document.querySelectorAll(".dropdown-tab.open").forEach(wrap => {
+                wrap.classList.remove("open");
+            });
+            document.querySelectorAll(".building-tab-button[aria-expanded='true']").forEach(btn => {
+                btn.setAttribute("aria-expanded", "false");
+            });
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                document.querySelectorAll(".building-tab-dropdown.show").forEach(menu => {
+                    menu.classList.remove("show");
+                });
+                document.querySelectorAll(".dropdown-tab.open").forEach(wrap => {
+                    wrap.classList.remove("open");
+                });
+                document.querySelectorAll(".building-tab-button[aria-expanded='true']").forEach(btn => {
+                    btn.setAttribute("aria-expanded", "false");
+                });
+            }
+        });
     });
     </script>
 </body>

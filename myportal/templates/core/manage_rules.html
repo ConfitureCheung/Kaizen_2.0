@@ -1,0 +1,434 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Insights – Manage Rules{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Insights: Manage Rules{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Manage Rules{% endblock %}
+
+{% block extra_css %}
+<style>
+.manage-rules-page {
+    margin: 0;
+    background: #efefef;
+}
+
+.rules-top-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 10px;
+    margin-bottom: 10px;
+}
+
+.rules-top-tab {
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid #cfcfcf;
+    border-right: none;
+    background: #f7f7f7;
+    color: #555;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.rules-top-tab:first-child {
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+.rules-top-tab:last-child {
+    border-right: 1px solid #cfcfcf;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.rules-top-tab.active {
+    background: #dff1f4;
+    color: #333;
+}
+
+.rules-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 6px 10px;
+    background: #d3d3d3;
+    border: 1px solid #d0d0d0;
+    border-bottom: none;
+    min-height: 40px;
+}
+
+.rules-toolbar-left,
+.rules-toolbar-center,
+.rules-toolbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.rules-toolbar-left {
+    justify-content: flex-start;
+}
+
+.rules-toolbar-center {
+    justify-content: center;
+}
+
+.rules-toolbar-right {
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.rules-icon-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #c7c7c7;
+    border-radius: 3px;
+    background: #fff;
+    color: #444;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.rules-icon-btn:hover {
+    background: #f8f8f8;
+    color: #e87722;
+}
+
+.rules-small-select,
+.rules-search-input {
+    height: 30px;
+    border: 1px solid #c7c7c7;
+    border-radius: 3px;
+    background: #fff;
+    color: #444;
+    font-size: 13px;
+    outline: none;
+}
+
+.rules-small-select {
+    width: 52px;
+    padding: 0 6px;
+}
+
+.rules-search-input {
+    width: 320px;
+    padding: 0 10px;
+}
+
+.rules-table-wrap {
+    border: 1px solid #d0d0d0;
+    background: #fff;
+    overflow: hidden;
+}
+
+.rules-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 13px;
+}
+
+.rules-table thead th {
+    background: #f6f6f6;
+    color: #333;
+    font-weight: 700;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid #dddddd;
+    white-space: nowrap;
+}
+
+.rules-table thead th:nth-child(1) { width: 21%; }
+.rules-table thead th:nth-child(2) { width: 60%; }
+.rules-table thead th:nth-child(3) { width: 8%; }
+.rules-table thead th:nth-child(4) { width: 7%; }
+.rules-table thead th:nth-child(5) { width: 4%; text-align: center; }
+
+.rules-sort {
+    font-size: 11px;
+    color: #333;
+    margin-left: 3px;
+}
+
+.rules-table tbody tr {
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.rules-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.rules-table td {
+    padding: 10px 12px;
+    color: #444;
+    vertical-align: top;
+    line-height: 1.35;
+}
+
+.rules-name {
+    color: #444;
+}
+
+.rules-desc {
+    color: #555;
+}
+
+.rules-type {
+    color: #555;
+    white-space: nowrap;
+}
+
+.rules-status.enabled {
+    color: #69b64a;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rules-status.disabled {
+    color: #d16a6a;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rules-view-cell {
+    text-align: center;
+}
+
+.rules-view-btn {
+    width: 34px;
+    height: 28px;
+    border: 1px solid #d3d3d3;
+    border-radius: 3px;
+    background: #f8f8f8;
+    color: #666;
+    cursor: pointer;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rules-view-btn:hover {
+    color: #e87722;
+    background: #fff;
+}
+
+.rules-view-badge {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    min-width: 13px;
+    height: 13px;
+    padding: 0 2px;
+    border-radius: 2px;
+    background: #2d8f8f;
+    color: #fff;
+    font-size: 9px;
+    line-height: 13px;
+    text-align: center;
+    font-weight: 700;
+}
+
+@media (max-width: 1400px) {
+    .rules-toolbar {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .rules-toolbar-left,
+    .rules-toolbar-center,
+    .rules-toolbar-right {
+        justify-content: flex-start;
+    }
+
+    .rules-search-input {
+        width: 220px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="manage-rules-page">
+    <div class="rules-top-tabs">
+        <a href="#" class="rules-top-tab active">All</a>
+        <a href="#" class="rules-top-tab">Fault Detection (144)</a>
+        <a href="#" class="rules-top-tab">Energy (20)</a>
+        <a href="#" class="rules-top-tab">Infrastructure (28)</a>
+    </div>
+
+    <div class="rules-toolbar">
+        <div class="rules-toolbar-left">
+            <button class="rules-icon-btn" title="Add">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <div class="rules-toolbar-center">
+            <button class="rules-icon-btn" title="Preview">
+                <i class="fa-regular fa-eye"></i>
+            </button>
+        </div>
+
+        <div class="rules-toolbar-right">
+            <select class="rules-small-select">
+                <option>100</option>
+                <option>50</option>
+                <option>25</option>
+            </select>
+            <input class="rules-search-input" type="text" placeholder="Search...">
+        </div>
+    </div>
+
+    <div class="rules-table-wrap">
+        <table class="rules-table">
+            <thead>
+                <tr>
+                    <th>Name <i class="fa-solid fa-arrow-up rules-sort"></i></th>
+                    <th>Description <i class="fa-solid fa-sort rules-sort"></i></th>
+                    <th>Type <i class="fa-solid fa-sort rules-sort"></i></th>
+                    <th>Status <i class="fa-solid fa-sort rules-sort"></i></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="rules-name">[FDD] Damper Position not match with Damper Command (On/Off)</td>
+                    <td class="rules-desc">Comparing damper position with damper command &gt;30% time weekly</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status disabled">Disabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn"><i class="fa-regular fa-eye"></i></button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine Chiller Isolation Valve is malfunctioning</td>
+                    <td class="rules-desc">Determine whether if there is flow rate when the chiller isolation valve close (flow &gt; 1 l/s)</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn">
+                            <i class="fa-regular fa-eye"></i>
+                            <span class="rules-view-badge">6</span>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine if Chiller occupancy is changing state too frequently</td>
+                    <td class="rules-desc">check the chiller operation.</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn">
+                            <i class="fa-regular fa-eye"></i>
+                            <span class="rules-view-badge">6</span>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine if Flow rate is out of range (CHWS)</td>
+                    <td class="rules-desc">[FDD] Determine if Flow rate is out of range (CHWS) (out of 30 to 40 l/s)</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status disabled">Disabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn"><i class="fa-regular fa-eye"></i></button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine if Flow rate is out of range (HWS)</td>
+                    <td class="rules-desc">[FDD] Determine if Flow rate is out of range (HWS) (out of 30 to 40 l/s)</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn"><i class="fa-regular fa-eye"></i></button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine if Temp out of normal range or not changing continuously (CHWRT)</td>
+                    <td class="rules-desc">Check the temperature sensor is, (i) Out of acceptable range [5 degC to 30 degC] (ii) Reading not changing for 3 hours continuously Note: -160 = sensor not installed</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn">
+                            <i class="fa-regular fa-eye"></i>
+                            <span class="rules-view-badge">8</span>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine if Temp out of normal range or not changing continuously (CHWST)</td>
+                    <td class="rules-desc">Check the temperature sensor is, (i) Out of acceptable range [5 degC to 30 degC] (ii) Reading not changing for 3 hours continuously Note: -160 = sensor not installed</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn">
+                            <i class="fa-regular fa-eye"></i>
+                            <span class="rules-view-badge">8</span>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine if Temp out of normal range or not changing continuously (HWRT)</td>
+                    <td class="rules-desc">Check the temperature sensor is, (i) Out of acceptable range [20 degC to 65 degC] (ii) Reading not changing for 3 hours continuously Note: -160 = sensor not installed</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn">
+                            <i class="fa-regular fa-eye"></i>
+                            <span class="rules-view-badge">4</span>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Determine if Temp out of normal range or not changing continuously (HWST)</td>
+                    <td class="rules-desc">Check the temperature sensor is, (i) Out of acceptable range [20 degC to 65 degC] (ii) Reading not changing for 3 hours continuously Note: -160 = sensor not installed</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn">
+                            <i class="fa-regular fa-eye"></i>
+                            <span class="rules-view-badge">4</span>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Hot water system in operation</td>
+                    <td class="rules-desc">Hot water system in operation</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status enabled">Enabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn">
+                            <i class="fa-regular fa-eye"></i>
+                            <span class="rules-view-badge">1</span>
+                        </button>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="rules-name">[FDD] Valve Position not match with Valve Command</td>
+                    <td class="rules-desc">Comparing valve position with valve command &gt;30% time weekly</td>
+                    <td class="rules-type">Fault Detection</td>
+                    <td class="rules-status disabled">Disabled</td>
+                    <td class="rules-view-cell">
+                        <button class="rules-view-btn"><i class="fa-regular fa-eye"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

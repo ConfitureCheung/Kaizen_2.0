@@ -1,0 +1,353 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Insights – Insight Management{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Insights: Management{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Insight Management{% endblock %}
+
+{% block extra_css %}
+<style>
+.insight-mgmt-wrap {
+    margin: 0;
+    background: #efefef;
+    border: 1px solid #d7d7d7;
+}
+
+.insight-mini-top {
+    font-size: 12px;
+    color: #666;
+    padding: 4px 6px 6px;
+}
+
+.insight-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #cfcfcf;
+    border-top: 1px solid #dcdcdc;
+    border-bottom: 1px solid #d2d2d2;
+    padding: 6px 10px;
+    min-height: 40px;
+}
+
+.insight-toolbar-left,
+.insight-toolbar-mid,
+.insight-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.insight-toolbar-mid {
+    flex: 1;
+    justify-content: center;
+}
+
+.insight-toolbar-right {
+    margin-left: auto;
+}
+
+.insight-selected-label {
+    font-size: 13px;
+    color: #333;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 4px;
+}
+
+.insight-selected-badge {
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #767676;
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+    display: inline-block;
+    font-weight: 700;
+}
+
+.insight-icon-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #c7c7c7;
+    background: #fff;
+    color: #444;
+    border-radius: 3px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+}
+
+.insight-icon-btn:hover {
+    background: #f6f6f6;
+    color: #e87722;
+}
+
+.insight-select,
+.insight-input {
+    height: 28px;
+    border: 1px solid #c7c7c7;
+    background: #fff;
+    color: #333;
+    border-radius: 3px;
+    font-size: 13px;
+    padding: 0 10px;
+    outline: none;
+}
+
+.insight-select-sm {
+    width: 68px;
+}
+
+.insight-select-rules {
+    min-width: 170px;
+}
+
+.insight-select-report {
+    min-width: 190px;
+}
+
+.insight-checkbox-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: #444;
+    margin-right: 8px;
+}
+
+.insight-toolbar-btn {
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid #c7c7c7;
+    background: #fff;
+    color: #444;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.insight-toolbar-btn:hover {
+    background: #f6f6f6;
+}
+
+.insight-grid-head {
+    background: #efefef;
+    border-bottom: 1px solid #d9d9d9;
+}
+
+.insight-grid-row {
+    display: grid;
+    grid-template-columns: 46px 80px 130px 1fr 220px;
+    align-items: center;
+    min-height: 22px;
+    font-size: 12px;
+    color: #333;
+    border-bottom: 1px solid #dfdfdf;
+}
+
+.insight-grid-row.head {
+    min-height: 28px;
+    background: #f3f3f3;
+    font-weight: 600;
+}
+
+.insight-grid-row.filters {
+    min-height: 30px;
+    background: #efefef;
+}
+
+.insight-cell {
+    padding: 0 8px;
+    border-right: 1px solid #e3e3e3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.insight-cell:last-child {
+    border-right: none;
+}
+
+.insight-sort {
+    font-size: 10px;
+    color: #777;
+    margin-left: 3px;
+}
+
+.insight-filter-box {
+    width: 100%;
+    height: 20px;
+    border: 1px solid #cfcfcf;
+    background: #fff;
+    border-radius: 2px;
+    font-size: 12px;
+    padding: 0 4px;
+    outline: none;
+}
+
+.insight-filter-inline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.insight-filter-icon {
+    font-size: 11px;
+    color: #555;
+}
+
+.insight-main-empty {
+    background: #efefef;
+    min-height: 470px;
+    border-top: 2px solid #d48442;
+}
+
+.insight-page-footer {
+    background: #efefef;
+    padding: 14px 8px 6px;
+    font-size: 10px;
+    color: #7a7a7a;
+    line-height: 1.35;
+}
+
+.insight-page-footer a {
+    color: #5f89b2;
+    text-decoration: none;
+}
+
+@media (max-width: 1400px) {
+    .insight-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .insight-toolbar-mid {
+        justify-content: flex-start;
+        flex: 0 0 auto;
+    }
+
+    .insight-toolbar-right {
+        margin-left: 0;
+        flex-wrap: wrap;
+    }
+
+    .insight-grid-row {
+        grid-template-columns: 46px 80px 130px 1fr 180px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="insight-mgmt-wrap">
+    <div class="insight-mini-top">Displaying 0/4</div>
+
+    <div class="insight-toolbar">
+        <div class="insight-toolbar-left">
+            <span class="insight-selected-label">
+                Selected
+                <span class="insight-selected-badge">0</span>
+            </span>
+
+            <button class="insight-icon-btn" title="Sort/Arrange"><i class="fa-solid fa-arrow-right-arrow-left"></i></button>
+            <button class="insight-icon-btn" title="Comments"><i class="fa-solid fa-comment"></i></button>
+            <button class="insight-icon-btn" title="Assign"><i class="fa-solid fa-user"></i></button>
+            <button class="insight-icon-btn" title="Action"><i class="fa-solid fa-hand"></i></button>
+            <button class="insight-icon-btn" title="View"><i class="fa-solid fa-eye"></i></button>
+            <button class="insight-icon-btn" title="Tag"><i class="fa-solid fa-tag"></i></button>
+        </div>
+
+        <div class="insight-toolbar-mid">
+            <select class="insight-select insight-select-rules">
+                <option>Rules currently active</option>
+                <option>All rules</option>
+                <option>Rules currently inactive</option>
+            </select>
+        </div>
+
+        <div class="insight-toolbar-right">
+            <label class="insight-checkbox-wrap">
+                <input type="checkbox">
+                <span>Subscribe</span>
+            </label>
+
+            <select class="insight-select insight-select-sm">
+                <option></option>
+                <option>Daily</option>
+                <option>Weekly</option>
+                <option>Monthly</option>
+            </select>
+
+            <select class="insight-select insight-select-report">
+                <option>instruction report</option>
+                <option>Default</option>
+                <option>Default Classic</option>
+            </select>
+
+            <button class="insight-icon-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+
+            <button class="insight-toolbar-btn">
+                <span>Export</span>
+                <i class="fa-solid fa-caret-down"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="insight-grid-head">
+        <div class="insight-grid-row head">
+            <div class="insight-cell"></div>
+            <div class="insight-cell">Priority <i class="fa-solid fa-sort-down insight-sort"></i></div>
+            <div class="insight-cell">Potential Cost Savings <i class="fa-solid fa-sort-down insight-sort"></i></div>
+            <div class="insight-cell">Message</div>
+            <div class="insight-cell">Last Occurrence<i class="fa-solid fa-sort-down insight-sort"></i></div>
+        </div>
+
+        <div class="insight-grid-row filters">
+            <div class="insight-cell"></div>
+
+            <div class="insight-cell">
+                <div class="insight-filter-inline">
+                    <input type="text" class="insight-filter-box">
+                    <i class="fa-solid fa-filter insight-filter-icon"></i>
+                </div>
+            </div>
+
+            <div class="insight-cell">
+                <input type="text" class="insight-filter-box">
+            </div>
+
+            <div class="insight-cell">
+                <div class="insight-filter-inline">
+                    <input type="text" class="insight-filter-box" value="instr">
+                    <i class="fa-solid fa-xmark insight-filter-icon"></i>
+                    <i class="fa-solid fa-filter insight-filter-icon"></i>
+                </div>
+            </div>
+
+            <div class="insight-cell">
+                <div class="insight-filter-inline">
+                    <input type="text" class="insight-filter-box">
+                    <i class="fa-solid fa-filter insight-filter-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="insight-main-empty"></div>
+
+    <div class="insight-page-footer">
+        <div>Copyright © CopperTree Analytics Inc. 2012 - 2026</div>
+        <div>Version: 4.0.4 (kaizen-east)</div>
+        <div><a href="#">Service Use Agreement</a></div>
+    </div>
+</div>
+{% endblock %}

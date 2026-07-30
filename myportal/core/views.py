@@ -959,6 +959,10 @@ def building_dashboard(request, building_id):
     })
 
 
+# ─────────────────────────────────────────────
+# VAULTS
+# ─────────────────────────────────────────────
+
 def vault_trend_logs(request, pk):
     building = get_object_or_404(Building, pk=pk)
     return render(request, 'core/trend_logs.html', {
@@ -974,4 +978,49 @@ def vault_objects(request, pk):
         'building': building,
         'selected_building': building,
         'building_tab': 'vault',
+    })
+
+
+# ─────────────────────────────────────────────
+# INSIGHTS
+# ─────────────────────────────────────────────
+
+def insight_management(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, 'core/insight_management.html', {
+        'building': building,
+        'selected_building': building,
+        'building_tab': 'insights',
+    })
+
+def create_insight_report(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, 'core/create_insight_report.html', {
+        'building': building,
+        'selected_building': building,
+        'building_tab': 'insights',
+    })
+
+def manage_rules(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, 'core/manage_rules.html', {
+        'building': building,
+        'selected_building': building,
+        'building_tab': 'insights',
+    })
+
+def golden_standard_configuration(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, 'core/golden_standard_configuration.html', {
+        'building': building,
+        'selected_building': building,
+        'building_tab': 'insights',
+    })
+
+def insight_subscription(request, pk):
+    building = get_object_or_404(Building, pk=pk)
+    return render(request, 'core/insight_subscription.html', {
+        'building': building,
+        'selected_building': building,
+        'building_tab': 'insights',
     })

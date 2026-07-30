@@ -1,0 +1,85 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Insights – Golden Standard Configuration{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Insights: Golden Standard Configuration{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Golden Standard Configuration{% endblock %}
+
+{% block extra_css %}
+<style>
+.gs-section {
+    margin: 14px 10px 0;
+    border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; overflow: hidden;
+}
+.gs-section + .gs-section { margin-top: 10px; }
+.gs-section-header {
+    padding: 10px 14px; font-size: 14px; font-weight: 600; color: #2f3136;
+    background: #fafafa; border-bottom: 1px solid #e0e0e0;
+}
+.gs-section-body { padding: 10px 14px; }
+.gs-add-btn {
+    width: 30px; height: 30px; border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; color: #555; cursor: pointer; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.gs-toolbar {
+    display: flex; align-items: center; gap: 8px; padding: 8px 0;
+}
+.gs-per-page {
+    height: 28px; border: 1px solid #d0d0d0; border-radius: 4px;
+    padding: 0 8px; font-size: 13px; background: #fff; margin-left: auto;
+}
+.gs-search-input {
+    height: 28px; width: 200px; border: 1px solid #d0d0d0; border-radius: 4px;
+    padding: 0 10px; font-size: 13px; outline: none;
+}
+.gs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.gs-table thead th {
+    background: #fafafa; padding: 8px 12px; border-bottom: 1px solid #e0e0e0;
+    font-weight: 700; color: #2f3136; text-align: left;
+}
+.gs-table thead th .sort-icon { font-size: 10px; color: #aaa; margin-left: 3px; }
+.gs-table tbody td { padding: 8px 12px; color: #aaa; font-style: italic; text-align: center; }
+.gs-search-icon-btn {
+    width: 30px; height: 28px; border: 1px solid #ccc; border-radius: 4px;
+    background: #fff; color: #555; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="gs-section">
+    <div class="gs-section-header">Configure Object Type</div>
+    <div class="gs-section-body">
+        <button class="gs-add-btn" title="Add Object Type"><i class="fa-regular fa-object-group"></i></button>
+    </div>
+</div>
+
+<div class="gs-section">
+    <div class="gs-section-header">Configure Object</div>
+    <div class="gs-section-body">
+        <div class="gs-toolbar">
+            <button class="gs-search-icon-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+            <select class="gs-per-page">
+                <option>100</option>
+                <option>50</option>
+            </select>
+            <input class="gs-search-input" type="text" placeholder="Search...">
+        </div>
+        <table class="gs-table">
+            <thead>
+                <tr>
+                    <th>Name <i class="fa-solid fa-arrow-up sort-icon"></i></th>
+                    <th>Reference <i class="fa-solid fa-sort sort-icon"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="2">No data to display</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

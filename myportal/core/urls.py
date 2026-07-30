@@ -37,9 +37,18 @@ urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
     path("dashboard/", views.dashboard_view, name="dashboard"),
 
+    # ── Vault ──
     path("buildings/<int:building_id>/dashboard/", views.building_dashboard, name="building_dashboard"),
     path('buildings/<int:pk>/vault/trend-logs/', views.vault_trend_logs, name='vault_trend_logs'),
     path('buildings/<int:pk>/vault/objects/', views.vault_objects, name='vault_objects'),
+
+    # ── Insights ──
+    path('buildings/<int:pk>/insights/management/', views.insight_management, name='insight_management'),
+    path('buildings/<int:pk>/insights/create-report/', views.create_insight_report, name='create_insight_report'),
+    path('buildings/<int:pk>/insights/manage-rules/', views.manage_rules, name='manage_rules'),
+    path('buildings/<int:pk>/insights/golden-standard/', views.golden_standard_configuration,
+         name='golden_standard_configuration'),
+    path('buildings/<int:pk>/insights/subscription/', views.insight_subscription, name='insight_subscription'),
 ]
 
 
