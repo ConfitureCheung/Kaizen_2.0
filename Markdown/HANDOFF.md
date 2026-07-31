@@ -3,90 +3,102 @@
 ## Current status
 The BLENDY Django project has its main structure in place, including the `accounts` and `core` apps, shared templates, authentication flow, and page routes for dashboard, users, groups, buildings, clients, profile, Vault, Insight, Energy & Report, and Charts/Systems/Settings sections.
 The Buildings pages (`buildings.html`, `building_detail.html`, `building_report.html`) remain layout-only or sample-data driven and are **deferred** to a later stage.
-The Groups, Users, Dashboard, left panel, Django admin, Vault, Insight, Energy & Report, and Charts/Systems/Settings sections are all **layout/route complete** — all eight building-tab icons in `base2.html` (Dashboard, Vault, Insights, Energy, Reports, Charts, Systems, Settings) point to real routes with `active` state highlighting; none are `href="#"` placeholders.
-The **next active implementation stage is the function of `core/settings_profile.html`** (the building-tab "Settings" page). It currently renders a **read-only** profile table (building name, location ID, address, timezone, contact info, building type, size, occupancy, etc.) with a toolbar **Edit button that has no behaviour yet** — no edit mode, no form, no save/POST handling. The `building_dashboard.html` content work (five empty placeholder cards) documented previously remains a separate, still-pending stage and has **not** been started.
+The Groups, Users, Dashboard, left panel, Django admin, Vault, Insight, Energy & Report, and Charts/Systems sections are all **layout/route complete** — all eight building-tab icons in `base2.html` (Dashboard, Vault, Insights, Energy, Reports, Charts, Systems, Settings) point to real routes with `active` state highlighting; none are `href="#"` placeholders.
+Settings is currently a **single plain link** (`building_settings_profile` → `core/settings_profile.html`, a read-only profile table with a toolbar Edit button that has no behaviour yet). The previously planned "make settings_profile.html editable" work is **deferred and decoupled** for now (see below) in favour of a more pressing, independent trial task.
+
+The **next active implementation stage is a standalone drag-and-drop prototype**: `core/fake_build_report.html`, reached through a **new "Settings" dropdown sub-nav** (built the same way as the existing Vault and Insights dropdowns). This is deliberately treated as an **isolated experiment**, not part of the Settings/Profile edit-save chain — the plan is to eventually add many more inner pages under each building-tab icon (Vault, Insights, Energy, Reports, Charts, Systems, Settings), and the relationships between all of them would get complicated fast if this prototype were tangled into the existing Profile work. Building it standalone first lets the drag-and-drop pattern (and the JS/tooling decisions behind it) get proven out before being reused elsewhere.
+The `building_dashboard.html` content work (five empty placeholder cards) documented previously remains a separate, still-pending stage and has **not** been started.
 
 ## What is already done
 - Custom auth model and login/logout flow are set up in the `accounts` app, and authenticated pages use the shared shell in `templates/base.html`.
 - Shared authenticated shell is implemented in `templates/base.html` with breadcrumb bar, page title, top-left hamburger button, icon-based main navigation, and a sliding left panel showing a Client → Building tree.
 - Groups, Clients, and Users pages are fully functional (client-scoped where relevant).
-- Account-level Profile page (`accounts/profile.html`) save flow, avatar upload, and Django admin visibility are implemented — this is the reference pattern to follow for the settings_profile.html save flow.
+- Account-level Profile page (`accounts/profile.html`) save flow, avatar upload, and Django admin visibility are implemented — this is the reference pattern to follow for any future settings_profile.html save flow.
 - `dashboard.html` (app-level dashboard, not building-scoped) is fully functional: connected to real queryset-backed KPI counts, recent activity feed, Client → Building summary, and alert/insight strip.
 - The sliding left panel in `base.html` is fully interactive.
 - **Django admin is fully consistent with the frontend view**.
-- **Vault section is complete**: `trend_logs.html` and `objects.html` are both live, reading data from the building-linked SQLite database via raw `sqlite3` connections.
-- **Insight section is complete (layout-first)**: all five pages (`insight_management.html`, `create_insight_report.html`, `manage_rules.html`, `golden_standard_configuration.html`, `insight_subscription.html`) extend `base2.html`, using static/sample data and sub-navigation tabs.
+- **Vault section is complete**: `trend_logs.html` and `objects.html` are both live, reading data from the building-linked SQLite database via raw `sqlite3` connections. Vault is exposed via a **dropdown sub-nav** in `base2.html` (`vaultDropdownWrap` / `vaultDropdownToggle` / `vaultDropdownMenu`) — this is the pattern the new Settings dropdown will copy.
+- **Insight section is complete (layout-first)**: all five pages (`insight_management.html`, `create_insight_report.html`, `manage_rules.html`, `golden_standard_configuration.html`, `insight_subscription.html`) extend `base2.html`, using static/sample data and sub-navigation tabs. Insights also uses the same dropdown sub-nav pattern (`insightsDropdownWrap` / `insightsDropdownToggle` / `insightsDropdownMenu`).
 - **Energy & Report section is complete**: `energy.html` (`building_energy` view) and `report.html` (`building_reports` view), both extending `base2.html` and wired into the building-tab sub-nav.
 - **Charts and Systems are complete (layout-first)**: `building_charts` renders `core/chart.html`, `building_systems` renders `core/systems.html`.
-- **Settings/Profile page exists but is read-only**: `building_settings_profile` view (`/buildings/<pk>/settings/profile/`) resolves the building via `pk`, enforces `_user_can_access_object_client`, and renders `core/settings_profile.html` with `selected_building`/`selected_client`/`building_tab="settings"`. The template displays all Building model fields (name, code/location id, country, state, city, postal, address, timezone, phone, fax, technical contact name/phone/email, building type, gross floor area, occupancy, energy_star_id, dashboard_chart) as a static two-column table. The `Building` model (`core/models.py`) already has all of these fields defined, so no schema/migration work is expected for the next step.
+- **Settings/Profile page exists but is read-only, and is not yet in a dropdown**: `building_settings_profile` view (`/buildings/<pk>/settings/profile/`) resolves the building via `pk`, enforces `_user_can_access_object_client`, and renders `core/settings_profile.html` with `selected_building`/`selected_client`/`building_tab="settings"`. The template displays all Building model fields (name, code/location id, country, state, city, postal, address, timezone, phone, fax, technical contact name/phone/email, building type, gross floor area, occupancy, energy_star_id, dashboard_chart) as a static two-column table. The `Building` model (`core/models.py`) already has all of these fields defined, so no schema/migration work is expected whenever the edit/save function is eventually picked back up.
 
 ## What is not yet done — current target
-**Settings/Profile function — `core/settings_profile.html` + `building_settings_profile` view.** The page currently only displays building data; it needs real edit/save functionality:
+**Settings dropdown restructuring + `core/fake_build_report.html` drag-and-drop prototype.** This is now the active target, and it is intentionally split from the (deferred) Settings/Profile edit-save work:
 
-- **Edit mode toggle** — the existing `.edit-btn` (pencil icon) in `.settings-toolbar` should switch the profile table into an editable form (inline or via a distinct edit state), following the same UX spirit as the account-level `profile.html` edit/save flow.
-- **Editable fields** — name, address, city, state, postal, country, timezone, building_phone, building_fax, tech_contact_name, tech_contact_phone, tech_contact_email, building_type, gross_floor_area, occupancy, energy_star_id, dashboard_chart, and photo upload (reusing the `Building.photo` ImageField, same pattern as building/client logo uploads elsewhere in the app).
-- **Form + POST handling** — add a `BuildingSettingsProfileForm` (or similar) in `core/forms.py` and extend `building_settings_profile` in `core/views.py` to handle `GET` (render read-only or form) and `POST` (validate + save), keeping the existing `_user_can_access_object_client` permission check intact.
-- **Save confirmation / redirect** — after a successful save, redisplay the page (read-only or with a success message), consistent with how `profile.html`'s save flow behaves.
+1. **Convert Settings into a dropdown sub-nav in `base2.html`**, mirroring the existing `vaultDropdownWrap`/`insightsDropdownWrap` markup and `initDropdown(...)` JS calls. The dropdown should expose two options:
+   - **"Profile"** → the existing `building_settings_profile` view / `core/settings_profile.html` (relocated under the dropdown, behaviour unchanged for now — still read-only, Edit button still has no function; that work stays deferred).
+   - **"Fake"** → a new view (e.g. `building_settings_fake`) and new URL (e.g. `buildings/<int:pk>/settings/fake/`) rendering the new `core/fake_build_report.html` template.
+2. **Build `core/fake_build_report.html` as a standalone drag-and-drop prototype** whose purpose is to explore building a **report layout via drag-and-drop** (dragging report elements/blocks into a canvas to assemble a report) — not to be wired into real building/report data yet. It should extend `base2.html` like the other building-tab pages, with `building_tab="settings"` (or a dedicated sub-tab flag) so the sidebar/nav states stay correct.
+3. **Decide on the drag-and-drop implementation approach**, which is still open:
+   - A client-side JS drag-and-drop library is needed (candidates: SortableJS, interact.js, GridStack.js).
+   - Whether that library is pulled in via a simple CDN `<script>` tag (no Node.js needed), or via `npm`/a `package.json` with a bundler/build step, is **not yet decided** — to be settled in the next session based on how much build tooling the user wants to introduce into this otherwise Node-free Django project.
+   - The user's stated purpose for drag-and-drop here is specifically to prototype **report building** (arranging report content/blocks), so the chosen library should be evaluated against that use case, not just generic list reordering.
 
 ## Important implementation notes
-- This page is **building-scoped** — resolve the active building context consistently with the existing `building_settings_profile` view (`selected_building`, `pk` in the URL).
-- Template must keep extending `base2.html` (building-tab shell) and reuse existing `.settings-profile-page` / `.profile-card` / `.profile-table` / `.edit-btn` classes already defined inline in `settings_profile.html`; avoid new CSS files unless strictly necessary.
-- Reuse the account-level `profile.html` + `accounts/forms.py` + `accounts/views.py` save pattern as the primary reference for form structure, validation, and file upload handling.
-- Keep all existing display fields and their current fallback/default values working when a field is blank.
+- Treat this as an **independent trial task** — do not entangle it with the Settings/Profile edit-save plan, and do not assume its patterns/decisions must be reused as-is elsewhere yet. It exists to prove out a drag-and-drop approach that will likely inform many future inner pages across the other building-tab icons (Vault, Insights, Energy, Reports, Charts, Systems), which are expected to grow into more complex, multi-page sections over time.
+- Follow the existing dropdown pattern exactly (`building-tab dropdown-tab`, `building-tab-button`, `building-tab-dropdown`, `building-tab-dropdown-link` classes, plus the `initDropdown(wrapId, toggleId, menuId)` JS helper already defined in `base2.html`) so Settings behaves identically to Vault/Insights.
+- `core/settings_profile.html`'s existing `.settings-profile-page` / `.profile-card` / `.profile-table` / `.edit-btn` styling should be left untouched — only its entry point in the nav changes (moves under the new dropdown as "Profile").
+- Keep `fake_build_report.html` clearly labelled/scoped as a prototype (e.g. sample/fake data only) so it's obvious it isn't a finished, data-backed report page yet.
 - `building_dashboard.html` (five placeholder cards: Building Profile, Dashboard/chart, Insights, Energy Breakdown, Green Facts) remains a **separate, still-pending** stage — do not work on it in this round.
-- No changes needed to `base2.html` nav itself — the Settings tab already links correctly to `building_settings_profile`.
 
 ## Relevant files for the next session
-- `myportal/templates/core/settings_profile.html` — add edit-mode markup/form fields alongside the existing read-only table.
-- `myportal/core/views.py` — extend `building_settings_profile` to handle `POST` and form validation/save.
-- `myportal/core/forms.py` — add a form class for the editable Building profile fields.
-- `myportal/core/models.py` — reference only; the `Building` model already has all needed fields (no migration expected).
-- `myportal/accounts/views.py` / `myportal/accounts/forms.py` / `myportal/templates/accounts/profile.html` — reference pattern for the existing working save/edit flow.
-- `myportal/core/urls.py` — no new routes expected; existing `/buildings/<int:pk>/settings/profile/` route already exists.
+- `myportal/templates/base2.html` — convert the plain Settings `<a>` link into a dropdown-tab (`Profile` / `Fake` options), following the existing Vault/Insights dropdown markup and JS.
+- `myportal/templates/core/fake_build_report.html` — **new file**, the drag-and-drop report-builder prototype page.
+- `myportal/core/views.py` — add a new `building_settings_fake` view (same permission-check pattern as `building_settings_profile`, `building_charts`, `building_systems`).
+- `myportal/core/urls.py` — add a new URL pattern under the `# ── Settings ──` section, e.g. `buildings/<int:pk>/settings/fake/` → `building_settings_fake`.
+- `myportal/static/js/app.js` (or a new scoped JS file/CDN script) — home for the drag-and-drop logic, once the library/tooling decision is made.
+- `myportal/templates/core/settings_profile.html` — unchanged in this round aside from now being reached via the new dropdown's "Profile" option.
+- `Markdown/HANDOFF.md`, `Markdown/PROJECT_OVERVIEW.md`, `Markdown/TASK.md` — keep in sync as this prototype task and the deferred Profile edit-save task both evolve.
 
 ## Next task
-Work on **making `core/settings_profile.html` functional** — turn the read-only building profile table into an editable form wired to a real save flow, using the account-level Profile page as the pattern to follow.
+Work on **restructuring the Settings icon into a dropdown ("Profile" / "Fake")** and **building `core/fake_build_report.html`** as an independent drag-and-drop report-builder prototype — following the Vault/Insights dropdown pattern for navigation, and deciding on a JS drag-and-drop library plus whether Node.js/npm tooling is warranted for this project.
 
 This next step should include:
-- Reviewing `accounts/profile.html`, `accounts/forms.py`, and `accounts/views.py` to confirm the existing edit/save UX pattern.
-- Adding a form class in `core/forms.py` covering the editable Building fields (including photo upload).
-- Extending `building_settings_profile` in `core/views.py` to accept `POST`, validate, and save changes, keeping the existing permission check intact.
-- Updating `settings_profile.html` so the Edit button actually toggles into an editable state and submits to the view.
-- Keeping the existing `.settings-profile-page` / `.profile-table` styling and layout intact.
+- Reviewing `base2.html`'s existing `vaultDropdownWrap`/`insightsDropdownWrap` markup and `initDropdown(...)` JS to confirm the dropdown pattern to replicate for Settings.
+- Adding the new `building_settings_fake` view and URL, following the `building_settings_profile`/`building_charts`/`building_systems` pattern (permission check, `selected_building`/`selected_client`/`building_tab` context).
+- Creating `core/fake_build_report.html` extending `base2.html`, with a drag-and-drop canvas/area for assembling report blocks (sample/fake content only for now).
+- Choosing and wiring in a drag-and-drop JS library (CDN vs. npm-managed), documenting the decision and rationale.
+- Relocating the existing Profile link under the new Settings dropdown without changing its behaviour.
 
 ## Constraints for the next edit
-- Focus on the Settings/Profile page function only (`core/settings_profile.html`, `core/views.py`'s `building_settings_profile`, and `core/forms.py`).
+- Focus only on: the Settings dropdown restructuring in `base2.html`, the new `fake_build_report.html` prototype, its view/URL, and whatever minimal JS/library wiring the drag-and-drop needs.
+- Do **not** implement the Settings/Profile edit-save function in this round — that work is deferred and will be picked back up as its own task later.
 - Do not start work on `building_dashboard.html` in this round — it remains a separate future stage.
 - Do not refactor unrelated modules (Groups, Buildings, Clients, Users, app-level Dashboard, Vault, Insight, Energy, Reports, Charts, Systems, Left panel, Admin).
-- Do not modify `static/css/app.css`/`app2.css` structurally (adding small scoped styles for the edit form is acceptable if unavoidable) or any existing admin files.
-- Preserve all existing model registrations and view signatures where not directly needed for the new POST handling.
+- Do not modify `static/css/app.css`/`app2.css` structurally (adding small scoped styles for the new dropdown/prototype is acceptable if unavoidable) or any existing admin files.
+- If Node.js/npm tooling is introduced, keep it clearly scoped/documented (e.g. a dedicated `package.json` for front-end drag-and-drop assets) so it doesn't disrupt the existing Django `runserver` workflow.
 - Return complete updated files for affected code when requesting AI help.
 
 ## Recommended next prompt
 Use a prompt in this shape for the next coding session:
 
 ```text
-Current task: make the building-tab Settings/Profile page functional —
-turn core/settings_profile.html from a read-only display into an editable
-form wired to a real save flow.
+Current task: restructure the Settings icon in base2.html into a dropdown
+sub-nav (like the existing Vault/Insights dropdowns), with two options:
+"Profile" (the existing building_settings_profile / settings_profile.html,
+relocated but otherwise unchanged) and "Fake" (a new
+core/fake_build_report.html prototype page).
+Then build core/fake_build_report.html as a standalone drag-and-drop
+report-builder prototype (sample/fake content, not wired to real data yet).
+
 Constraints:
-- reuse the account-level profile.html / accounts/forms.py / accounts/views.py
-  edit-save pattern as the reference
-- add a form class in core/forms.py for the editable Building fields
-  (name, address, city, state, postal, country, timezone, building_phone,
-  building_fax, tech_contact_name/phone/email, building_type,
-  gross_floor_area, occupancy, energy_star_id, dashboard_chart, photo)
-- extend building_settings_profile in core/views.py to handle POST,
-  validate, and save, keeping _user_can_access_object_client intact
-- the existing .edit-btn should toggle into an edit state and submit to the view
-- reuse existing .settings-profile-page / .profile-table CSS; avoid new CSS files
-- no changes to base2.html nav (Settings tab already links correctly)
-- no work on building_dashboard.html in this round
-- no modifications to app.css, admin files, or any already-completed views
+- follow the exact dropdown markup/JS pattern already used for Vault
+  (vaultDropdownWrap/vaultDropdownToggle/vaultDropdownMenu) and Insights
+  (insightsDropdownWrap/insightsDropdownToggle/insightsDropdownMenu) in base2.html
+- add a new building_settings_fake view in core/views.py following the
+  same permission-check pattern as building_settings_profile
+- add a new URL (e.g. buildings/<int:pk>/settings/fake/) in core/urls.py
+- this is an independent trial task — do not implement the
+  Settings/Profile edit-save function in this round
+- do not touch building_dashboard.html in this round
+- propose a drag-and-drop JS approach (CDN library vs. npm-managed with a
+  build step) suited to assembling report blocks, and explain the tradeoff
+- no modifications to app.css structurally, admin files, or already-completed views
 Reference:
-- accounts/profile.html, accounts/forms.py, accounts/views.py for the working save pattern
-- core/models.py Building model for the exact field list and types
-- existing building_settings_profile view (core/views.py) and template
-  (core/settings_profile.html) for current structure
+- templates/base2.html for the existing Vault/Insights dropdown pattern
+- core/views.py's building_settings_profile / building_charts / building_systems
+  for the view pattern to follow
+- core/urls.py for the Settings section URL block to extend
 Please return complete updated files only.
 ```
