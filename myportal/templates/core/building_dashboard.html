@@ -4,33 +4,460 @@
 {% block breadcrumb %}{{ selected_client.name }} / {{ selected_building.name }} / Dashboard{% endblock %}
 {% block page_title %}{{ selected_building.name }} : Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+    .building-dashboard-grid {
+        display: grid;
+        grid-template-columns: 440px 1fr 1fr;
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+            "profile chart    chart"
+            "profile insights insights"
+            "profile energy   green";
+        gap: 14px;
+        align-items: stretch;
+    }
+
+    .building-card-profile {
+        grid-area: profile;
+        display: flex;
+        flex-direction: column;
+    }
+    .building-card-profile .building-card-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+    .building-card-chart    { grid-area: chart; }
+    .building-card-insights { grid-area: insights; }
+    .building-card-energy   { grid-area: energy; }
+    .building-card-green    { grid-area: green; }
+
+    @media (max-width: 1400px) {
+        .building-dashboard-grid {
+            grid-template-columns: 320px 1fr;
+            grid-template-areas:
+                "profile chart"
+                "profile insights"
+                "profile energy"
+                "profile green";
+        }
+    }
+
+    @media (max-width: 1100px) {
+        .building-dashboard-grid {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "profile"
+                "chart"
+                "insights"
+                "energy"
+                "green";
+        }
+    }
+
+    .building-page-content {
+        padding-bottom: 24px;
+    }
+
+    /* ---- Building Profile card ---- */
+    .bp-photo-wrap {
+        padding: 14px;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+    }
+    .bp-photo-wrap img {
+        max-width: 100%;
+        max-height: 160px;
+        object-fit: cover;
+        border-radius: 3px;
+    }
+    .bp-photo-placeholder {
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f2f2f2;
+        color: #999;
+        font-size: 12px;
+        border-radius: 3px;
+    }
+    .bp-building-name {
+        font-weight: 700;
+        font-size: 13px;
+        color: #333;
+        margin-top: 8px;
+    }
+    .bp-section {
+        padding: 12px 14px;
+        border-bottom: 1px solid #eee;
+    }
+    .bp-section-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+    .bp-address-text {
+        font-size: 12px;
+        color: #444;
+        line-height: 1.5;
+    }
+
+    /* Weather widget (Open-Meteo) */
+    .weather-current {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+    .weather-current i {
+        font-size: 30px;
+        color: #f0a71b;
+    }
+    .weather-current .temp {
+        font-size: 22px;
+        font-weight: 700;
+        color: #333;
+    }
+    .weather-forecast {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 4px;
+        text-align: center;
+        margin-top: 8px;
+    }
+    .weather-forecast .wf-day {
+        font-size: 10px;
+        color: #666;
+    }
+    .weather-forecast i {
+        font-size: 14px;
+        color: #f0a71b;
+        display: block;
+        margin: 4px 0;
+    }
+    .weather-forecast .wf-temp {
+        font-size: 10px;
+        color: #333;
+    }
+    .weather-loading, .weather-error {
+        font-size: 12px;
+        color: #999;
+    }
+
+    /* Map */
+    .bp-map-wrap {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .bp-map-wrap iframe {
+        width: 100%;
+        height: 220px;
+        border: 0;
+        display: block;
+    }
+
+    /* Chart card */
+    .chart-card-title {
+        text-align: center;
+        padding: 10px 14px 0;
+    }
+    .chart-card-title strong {
+        font-size: 13px;
+        color: #333;
+        display: block;
+    }
+    .chart-card-title span {
+        font-size: 11px;
+        color: #888;
+    }
+    .chart-canvas-wrap {
+        padding: 10px 14px 16px;
+    }
+
+    /* Insights */
+    .insights-total {
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        color: #c0392b;
+        margin: 10px 0;
+    }
+    .insights-sub-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #555;
+        padding: 0 14px;
+    }
+    .insights-system-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 10px 14px 0;
+        padding: 8px 10px;
+        background: #f7f7f7;
+        font-size: 12px;
+        color: #2b6fb3;
+    }
+
+    /* Energy breakdown */
+    .energy-system-label {
+        text-align: center;
+        font-size: 13px;
+        color: #2b6fb3;
+        margin-top: 18px;
+    }
+    .energy-kwh-value {
+        text-align: center;
+        font-size: 13px;
+        color: #333;
+        margin-top: 30px;
+    }
+
+    /* Green facts */
+    .green-facts-body {
+        text-align: center;
+        padding: 20px 14px 10px;
+    }
+    .green-facts-body i {
+        font-size: 40px;
+        color: #2b6fb3;
+    }
+    .green-facts-text {
+        font-size: 12px;
+        color: #333;
+        margin-top: 14px;
+    }
+    .green-facts-note {
+        font-size: 10px;
+        color: #999;
+        margin-top: 14px;
+        padding: 0 14px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="building-dashboard-placeholder">
     <div class="building-dashboard-grid">
-        <section class="building-card building-card-tall">
+
+        <!-- ── BUILDING PROFILE (spans the whole left column) ── -->
+        <section class="building-card building-card-profile">
             <div class="building-card-head">BUILDING PROFILE</div>
-            <div class="building-card-body"></div>
+            <div class="building-card-body">
+
+                <!-- Part 1: Building image — same field/pattern used in building_detail.html -->
+                <div class="bp-photo-wrap">
+                    {% if selected_building.photo %}
+                        <img src="{{ selected_building.photo.url }}" alt="{{ selected_building.name }} photo">
+                    {% else %}
+                        <div class="bp-photo-placeholder">No photo uploaded</div>
+                    {% endif %}
+                    <div class="bp-building-name">{{ selected_building.name }}</div>
+                </div>
+
+                <!-- Part 2: Weather — Open-Meteo API (free, no API key required) -->
+                <div class="bp-section">
+                    <div class="bp-section-title">Weather</div>
+                    <div id="weatherWidget" class="weather-loading">Loading weather…</div>
+                </div>
+
+                <!-- Part 3: Address + Google Map -->
+                <div class="bp-section">
+                    <div class="bp-section-title">Building Address</div>
+                    <div class="bp-address-text">
+                        {{ selected_building.address }}{% if selected_building.city %}, {{ selected_building.city }}{% endif %}
+                    </div>
+                </div>
+                <div class="bp-section bp-map-wrap" style="padding:0; border-bottom:0;">
+                    <div class="bp-section-title" style="padding:12px 14px 0;">Location Map</div>
+                    {% if selected_building.latitude and selected_building.longitude %}
+                        <iframe
+                            src="https://www.google.com/maps?q={{ selected_building.latitude }},{{ selected_building.longitude }}&z=15&output=embed"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    {% elif selected_building.address %}
+                        <iframe
+                            src="https://www.google.com/maps?q={{ selected_building.address|urlencode }}&z=15&output=embed"
+                            loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    {% else %}
+                        <div class="bp-photo-placeholder">No address on file</div>
+                    {% endif %}
+                </div>
+
+            </div>
         </section>
 
-        <section class="building-card building-card-wide">
+        <!-- ── DASHBOARD chart — stacked bar + line, static sample data ── -->
+        <section class="building-card building-card-chart">
             <div class="building-card-head">DASHBOARD</div>
-            <div class="building-card-body"></div>
+            <div class="building-card-body">
+                <div class="chart-card-title">
+                    <strong>{{ selected_building.name }} Average Cooling Load Report</strong>
+                    <span>Sample data — 01 Jan 2026 to 31 Jul 2026</span>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="coolingLoadChart" height="50"></canvas>
+                </div>
+            </div>
         </section>
 
-        <section class="building-card building-card-wide">
+        <!-- ── INSIGHTS — static placeholder text ── -->
+        <section class="building-card building-card-insights">
             <div class="building-card-head">INSIGHTS</div>
-            <div class="building-card-body"></div>
+            <div class="building-card-body">
+                <div class="insights-total">2 Total Insights</div>
+                <div class="insights-sub-label">1 System with the Most Insights:</div>
+                <div class="insights-system-row">
+                    <i class="fa-solid fa-plus"></i> PEU-3-01 (1)
+                </div>
+            </div>
         </section>
 
-        <section class="building-card">
-            <div class="building-card-head">ENERGY BREAKDOWN</div>
-            <div class="building-card-body"></div>
+        <!-- ── ENERGY BREAKDOWN — static placeholder text ── -->
+        <section class="building-card building-card-energy">
+            <div class="building-card-head">ENERGY BREAKDOWN (CURRENT WEEK)</div>
+            <div class="building-card-body">
+                <div class="energy-system-label">Chiller Plant</div>
+                <div class="energy-kwh-value">0.0 kWh</div>
+            </div>
         </section>
 
-        <section class="building-card">
+        <!-- ── GREEN FACTS — static placeholder text ── -->
+        <section class="building-card building-card-green">
             <div class="building-card-head">GREEN FACTS</div>
-            <div class="building-card-body"></div>
+            <div class="building-card-body">
+                <div class="green-facts-body">
+                    <i class="fa-solid fa-fan"></i>
+                    <div class="green-facts-text">Balancing airflows ensures even temperature and maximizes energy savings.</div>
+                </div>
+                <div class="green-facts-note">
+                    <i class="fa-solid fa-circle-info"></i>
+                    These facts and tips are intended for general information and may not apply to all buildings or regions. Always consider your specific building requirements and local regulations.
+                </div>
+            </div>
         </section>
+
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* ---------- Weather widget (Open-Meteo — free, no API key needed) ---------- */
+    const lat = {{ selected_building.latitude|default:"22.3193" }};
+    const lon = {{ selected_building.longitude|default:"114.1694" }};
+
+    const weatherIconMap = {
+        0: "fa-sun", 1: "fa-cloud-sun", 2: "fa-cloud-sun", 3: "fa-cloud",
+        45: "fa-smog", 48: "fa-smog",
+        51: "fa-cloud-rain", 53: "fa-cloud-rain", 55: "fa-cloud-rain",
+        61: "fa-cloud-showers-heavy", 63: "fa-cloud-showers-heavy", 65: "fa-cloud-showers-heavy",
+        71: "fa-snowflake", 73: "fa-snowflake", 75: "fa-snowflake",
+        80: "fa-cloud-showers-heavy", 81: "fa-cloud-showers-heavy", 82: "fa-cloud-showers-heavy",
+        95: "fa-bolt", 96: "fa-bolt", 99: "fa-bolt"
+    };
+
+    function iconFor(code) {
+        return weatherIconMap[code] || "fa-cloud-sun";
+    }
+
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`)
+        .then(res => res.json())
+        .then(data => {
+            const widget = document.getElementById("weatherWidget");
+            const current = data.current_weather;
+            const daily = data.daily;
+
+            let forecastHtml = "";
+            for (let i = 0; i < Math.min(6, daily.time.length); i++) {
+                const d = new Date(daily.time[i]);
+                const label = d.toLocaleDateString("en-US", { weekday: "short" });
+                forecastHtml += `
+                    <div class="wf-day">
+                        ${label}
+                        <i class="fa-solid ${iconFor(daily.weathercode[i])}"></i>
+                        <div class="wf-temp">${Math.round(daily.temperature_2m_max[i])}°/${Math.round(daily.temperature_2m_min[i])}°</div>
+                    </div>`;
+            }
+
+            widget.classList.remove("weather-loading");
+            widget.innerHTML = `
+                <div class="weather-current">
+                    <i class="fa-solid ${iconFor(current.weathercode)}"></i>
+                    <span class="temp">${Math.round(current.temperature)}°C</span>
+                </div>
+                <div class="weather-forecast">${forecastHtml}</div>
+            `;
+        })
+        .catch(() => {
+            const widget = document.getElementById("weatherWidget");
+            widget.classList.remove("weather-loading");
+            widget.classList.add("weather-error");
+            widget.textContent = "Weather data unavailable.";
+        });
+
+    /* ---------- Cooling Load chart — static sample data (stacked bar + line) ---------- */
+    const ctx = document.getElementById("coolingLoadChart");
+    if (ctx) {
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: ["01-Jan", "08-Jan", "15-Jan", "22-Jan", "29-Jan", "05-Feb", "12-Feb", "19-Feb", "26-Feb", "05-Mar", "12-Mar", "19-Mar"],
+                datasets: [
+                    { label: "OFAC-01 in operation", backgroundColor: "#6bb7c9", data: [5, 0, 1, 5, 1, 8, 8, 1, 5, 4, 1, 8], stack: "ops" },
+                    { label: "OFAC-02 in operation", backgroundColor: "#5a9e6f", data: [0, 0, 0, 0, 0, 4, 4, 6, 0, 0, 0, 4], stack: "ops" },
+                    { label: "HRC-01 in operation", backgroundColor: "#8f7fc4", data: [4, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0], stack: "ops" },
+                    { label: "HRC-02 in operation", backgroundColor: "#c0504d", data: [0, 8, 0, 8, 0, 4, 4, 0, 0, 0, 1, 6], stack: "ops" },
+                    { label: "HP-01 in operation", backgroundColor: "#e8c84a", data: [0, 0, 0, 0, 0, 8, 8, 4, 0, 0, 0, 4], stack: "ops" },
+                    { label: "HP-02 in operation", backgroundColor: "#e79c3a", data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], stack: "ops" },
+                    {
+                        label: "Chiller Plant Average Cooling Load",
+                        type: "line",
+                        borderColor: "#c0392b",
+                        backgroundColor: "#c0392b",
+                        data: [900, 700, 500, 1200, 500, 2100, 2100, 1300, 900, 900, 1000, 2200],
+                        yAxisID: "y1",
+                        tension: 0.3
+                    },
+                    {
+                        label: "Outdoor Temperature",
+                        type: "line",
+                        borderColor: "#3f6fbf",
+                        backgroundColor: "#3f6fbf",
+                        data: [16, 16, 17, 18, 17, 24, 27, 24, 20, 19, 20, 22],
+                        yAxisID: "y1",
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: "index", intersect: false },
+                scales: {
+                    x: { stacked: true },
+                    y: {
+                        stacked: true,
+                        position: "left",
+                        title: { display: true, text: "Equipment in operation / Temp (°C)" }
+                    },
+                    y1: {
+                        position: "right",
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: "Cooling Load" }
+                    }
+                },
+                plugins: {
+                    legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 10 } } }
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
