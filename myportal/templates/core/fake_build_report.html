@@ -1,0 +1,1121 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Fake Report Builder | {{ selected_building.name }}{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Settings / Fake{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Fake Report Builder{% endblock %}
+
+{% block extra_css %}
+<style>
+    .frb-page {
+        display: grid;
+        grid-template-columns: 260px 1fr 340px;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .frb-left, .frb-mid, .frb-right {
+        background: #f7f7f7;
+        border: 1px solid #d9d9d9;
+        border-radius: 4px;
+        padding: 12px;
+    }
+
+    .frb-left h3, .frb-mid h3, .frb-right h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .frb-left h4, .frb-mid h4, .frb-right h4 {
+        margin: 16px 0 8px;
+        font-size: 12px;
+        color: #777;
+        text-transform: uppercase;
+    }
+
+    .frb-divider {
+        border: none;
+        border-top: 1px solid #ddd;
+        margin: 18px 0;
+    }
+
+    .frb-plates {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .frb-plate {
+        background: #fff;
+        border: 1px solid #cfcfcf;
+        border-left: 4px solid #e87722;
+        border-radius: 3px;
+        padding: 8px 10px;
+        cursor: grab;
+        user-select: none;
+    }
+    .frb-plate:active { cursor: grabbing; }
+    .frb-plate-title { font-size: 13px; font-weight: 600; color: #333; }
+    .frb-plate-meta { font-size: 11px; color: #999; margin-top: 2px; }
+
+    .frb-upload-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        background: #e87722;
+        color: #fff;
+        border-radius: 3px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .frb-upload-label:hover { background: #d3690f; }
+
+    .frb-filename {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #888;
+        word-break: break-all;
+    }
+
+    /* ── Chip palettes (operators / grouping / functions / aggregates) ── */
+    .frb-chip-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+    }
+    .frb-chip {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 10px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 3px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: grab;
+        user-select: none;
+        border: 1px solid transparent;
+    }
+    .frb-chip:active { cursor: grabbing; }
+
+    .frb-chip-op {
+        background: #eaf5ee;
+        border-left: 4px solid #2c7a4b;
+        color: #2c7a4b;
+        font-size: 16px;
+    }
+    .frb-chip-bracket {
+        background: #f0f0f0;
+        border-left: 4px solid #555;
+        color: #444;
+    }
+    .frb-chip-func {
+        background: #f2ecfb;
+        border-left: 4px solid #7c4dbb;
+        color: #7c4dbb;
+    }
+    .frb-chip-agg {
+        background: #e9f1fb;
+        border-left: 4px solid #2f6fb0;
+        color: #2f6fb0;
+    }
+
+    /* ── Chain builder (drop target) ── */
+    .frb-chain-track {
+        min-height: 56px;
+        border: 2px dashed #c7c7c7;
+        border-radius: 4px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 10px;
+    }
+    .frb-chain-track.frb-slot-hover { border-color: #e87722; background: #fff4ea; }
+    .frb-chain-empty { font-size: 13px; color: #999; font-style: italic; }
+
+    .frb-token {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 3px;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+    .frb-token-col {
+        background: #fff2e6;
+        border-color: #e87722;
+        color: #a1490d;
+        font-weight: 600;
+    }
+    .frb-token-col.frb-token-hover { border-color: #7c4dbb; background: #f2ecfb; }
+    .frb-token-op {
+        background: #eaf5ee;
+        border-color: #2c7a4b;
+        color: #2c7a4b;
+        font-weight: 700;
+    }
+    .frb-token-agg {
+        background: #e9f1fb;
+        border-color: #2f6fb0;
+        color: #2f6fb0;
+        font-weight: 700;
+    }
+    .frb-token-agg.frb-token-hover { border-color: #7c4dbb; background: #f2ecfb; }
+    .frb-agg-slot {
+        display: inline-block;
+        border: 1px dashed #2f6fb0;
+        border-radius: 2px;
+        padding: 1px 6px;
+        font-size: 11px;
+        font-weight: 400;
+        font-style: italic;
+        color: #6a93bd;
+    }
+    .frb-token-group {
+        background: #fffbe6;
+        border-color: #d8c47a;
+        color: #7a6a1a;
+        font-weight: 600;
+    }
+    .frb-token-group.frb-token-hover { border-color: #7c4dbb; background: #f2ecfb; }
+    .frb-group-inner {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        padding: 2px 6px;
+        min-width: 24px;
+        border-radius: 3px;
+    }
+    .frb-group-inner.frb-slot-hover { background: #fff4ea; }
+
+    .frb-token-func-badge {
+        background: #7c4dbb;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 2px;
+        padding: 1px 5px;
+        margin-right: 2px;
+    }
+    .frb-token .frb-token-x {
+        font-size: 12px;
+        opacity: .6;
+    }
+    .frb-token:hover .frb-token-x { opacity: 1; }
+
+    .frb-hint {
+        font-size: 11px;
+        color: #999;
+        margin-top: 6px;
+    }
+
+    .frb-builder-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .frb-btn {
+        padding: 7px 14px;
+        border-radius: 3px;
+        font-size: 12px;
+        border: 1px solid #cfcfcf;
+        background: #fff;
+        color: #444;
+        cursor: pointer;
+    }
+    .frb-btn-primary {
+        background: #2c7a4b;
+        border-color: #2c7a4b;
+        color: #fff;
+    }
+    .frb-btn-primary:disabled {
+        background: #a9c9b3;
+        border-color: #a9c9b3;
+        cursor: not-allowed;
+    }
+    .frb-btn:hover:not(:disabled) { opacity: .9; }
+
+    .frb-error {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #b33;
+        background: #fdecea;
+        border: 1px solid #f5c2c0;
+        border-radius: 3px;
+        padding: 6px 10px;
+    }
+
+    /* ── Saved formulas (mid panel) ── */
+    .frb-saved-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .frb-formula-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border: 1px solid #cfcfcf;
+        border-left: 4px solid #2c7a4b;
+        border-radius: 3px;
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+    .frb-formula-name { color: #333; font-weight: 600; word-break: break-word; }
+    .frb-formula-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .frb-formula-remove {
+        border: none;
+        background: none;
+        color: #b33;
+        font-size: 16px;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+
+    /* ── Right panel ── */
+    .frb-answer-card {
+        background: #fff;
+        border: 1px solid #cfcfcf;
+        border-radius: 3px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    .frb-answer-header {
+        background: #efefef;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #333;
+        border-bottom: 1px solid #d9d9d9;
+        word-break: break-word;
+    }
+    .frb-answer-rows {
+        max-height: 180px;
+        overflow-y: auto;
+    }
+    .frb-answer-row-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 10px;
+        font-size: 12px;
+        color: #444;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .frb-answer-row-item:last-child { border-bottom: none; }
+    .frb-answer-row-item span:first-child { color: #888; }
+    .frb-answer-row-item span:last-child { font-weight: 600; color: #2c7a4b; }
+
+    .frb-export-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+    }
+    .frb-export-btn {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 6px;
+        border: 1px solid #cfcfcf;
+        background: #fff;
+        border-radius: 3px;
+        font-size: 12px;
+        color: #444;
+        cursor: pointer;
+    }
+    .frb-export-btn:hover { background: #f0f0f0; }
+
+    .frb-print-only { display: none; }
+
+    @media print {
+        body * { visibility: hidden; }
+        #frbPrintArea, #frbPrintArea * { visibility: visible; }
+        #frbPrintArea {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: block !important;
+        }
+        #frbPrintArea table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+        #frbPrintArea th, #frbPrintArea td {
+            border: 1px solid #333;
+            padding: 6px 10px;
+            font-size: 12px;
+            text-align: left;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="frb-page">
+
+    {# ── Left panel: CSV upload + column plates ── #}
+    <div class="frb-left">
+        <h3>Data Source</h3>
+        <label for="csvFileInput" class="frb-upload-label">
+            <i class="fa-solid fa-upload"></i> Upload CSV
+        </label>
+        <input type="file" id="csvFileInput" accept=".csv" hidden>
+        <div id="csvFileName" class="frb-filename">No file selected</div>
+
+        <h4>Columns (drag a plate →)</h4>
+        <div id="columnPlates" class="frb-plates">
+            <p style="font-size:12px;color:#999;">Upload a CSV to see column plates here.</p>
+        </div>
+    </div>
+
+    {# ── Mid panel: drag-and-drop formula chain builder (columns, brackets, operators, functions, aggregates) ── #}
+    <div class="frb-mid">
+        <h3>Report Builder</h3>
+
+        <h4>Operators (drag into the chain)</h4>
+        <div class="frb-chip-row">
+            <div class="frb-chip frb-chip-op" draggable="true" data-kind="operator" data-op="+">+</div>
+            <div class="frb-chip frb-chip-op" draggable="true" data-kind="operator" data-op="-">&minus;</div>
+            <div class="frb-chip frb-chip-op" draggable="true" data-kind="operator" data-op="*">&times;</div>
+            <div class="frb-chip frb-chip-op" draggable="true" data-kind="operator" data-op="/">&divide;</div>
+            <div class="frb-chip frb-chip-op" draggable="true" data-kind="operator" data-op="^">^</div>
+            <div class="frb-chip frb-chip-op" draggable="true" data-kind="operator" data-op="%">%</div>
+        </div>
+
+        <h4>Grouping (drag to start a bracket group)</h4>
+        <div class="frb-chip-row">
+            <div class="frb-chip frb-chip-bracket" draggable="true" data-kind="bracket">( )</div>
+        </div>
+
+        <h4>Functions (drag onto a column token or a closed bracket group to wrap it)</h4>
+        <div class="frb-chip-row">
+            <div class="frb-chip frb-chip-func" draggable="true" data-kind="function" data-func="ABS">ABS</div>
+            <div class="frb-chip frb-chip-func" draggable="true" data-kind="function" data-func="ROUND">ROUND</div>
+            <div class="frb-chip frb-chip-func" draggable="true" data-kind="function" data-func="SQRT">SQRT</div>
+        </div>
+
+        <h4>Aggregates (drag into the chain as a term, e.g. COUNT(ColA))</h4>
+        <div class="frb-chip-row">
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="SUM">SUM</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="AVG">AVG</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="MIN">MIN</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="MAX">MAX</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="COUNT">COUNT</div>
+        </div>
+
+        <h4>Formula Chain (per row)</h4>
+        <div id="chainTrack" class="frb-chain-track">
+            <span class="frb-chain-empty" id="chainPlaceholder">Drag a column, bracket, or aggregate, then an operator, then another term&hellip;</span>
+        </div>
+        <p class="frb-hint">
+            Click a token (or a bracket's &times;) to remove it and everything after it.
+            Drop ABS/ROUND/SQRT directly onto a column or an aggregate term to wrap just that term &mdash;
+            drop it onto empty space inside a bracket to wrap the whole group, e.g. SQRT(ColA + ColB).
+            Aggregates like COUNT(ColA) can sit in the chain as a constant term, e.g. COUNT(ColA) + ColB.
+        </p>
+        <div class="frb-builder-actions">
+            <button type="button" id="clearChainBtn" class="frb-btn">Clear</button>
+            <button type="button" id="saveFormulaBtn" class="frb-btn frb-btn-primary" disabled>Save Formula</button>
+        </div>
+        <div id="formulaError" class="frb-error" style="display:none;"></div>
+
+        <div id="savedFormulas" class="frb-saved-list">
+            <p style="font-size:12px;color:#999;">No formulas saved yet.</p>
+        </div>
+
+    </div>
+
+    {# ── Right panel: per-row answers + export ── #}
+    <div class="frb-right">
+        <h3>Answers</h3>
+        <div id="answersPanel">
+            <p style="font-size:12px;color:#999;">Save a formula to see row-by-row answers here.</p>
+        </div>
+
+        <div class="frb-export-row">
+            <button type="button" id="exportCsvBtn" class="frb-export-btn">
+                <i class="fa-solid fa-file-csv"></i> Export CSV
+            </button>
+            <button type="button" id="exportPdfBtn" class="frb-export-btn">
+                <i class="fa-solid fa-file-pdf"></i> Export PDF
+            </button>
+        </div>
+    </div>
+
+</div>
+
+{# Hidden print-only area, filled in just before window.print() is called #}
+<div id="frbPrintArea" class="frb-print-only"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // ── State ──
+    let columnsData = {};       // { "ColumnName": ["1", "2", ...] }
+    let rowLabels = [];         // per-row label (timestamp column values, or "Row 1", "Row 2"...)
+    let labelColumnName = null;
+
+    // Formula chain: array alternating "term" and "operator" entries.
+    //   term (column):    { kind:'term', termType:'column', value:'ColA', wrapFunc:null|'ABS'|'ROUND'|'SQRT' }
+    //   term (group):     { kind:'term', termType:'group', items:[ ...nested column/operator terms... ], wrapFunc:null|... }
+    //   term (aggregate): { kind:'term', termType:'aggregate', aggFunc:'SUM'|'AVG'|'MIN'|'MAX'|'COUNT', column:null|'ColA', wrapFunc:null|... }
+    //   operator:         { kind:'operator', value:'+'|'-'|'*'|'/'|'^'|'%' }
+    let chain = [];
+    let formulas = [];          // { id, name, values:[...] }  (values aligned with rowLabels)
+
+    // ── Elements ──
+    const csvFileInput    = document.getElementById("csvFileInput");
+    const csvFileName     = document.getElementById("csvFileName");
+    const columnPlatesEl  = document.getElementById("columnPlates");
+
+    const chainTrack        = document.getElementById("chainTrack");
+    const chainPlaceholder  = document.getElementById("chainPlaceholder");
+    const clearChainBtn     = document.getElementById("clearChainBtn");
+    const saveFormulaBtn    = document.getElementById("saveFormulaBtn");
+    const formulaError      = document.getElementById("formulaError");
+    const savedFormulasEl   = document.getElementById("savedFormulas");
+
+    const answersPanelEl    = document.getElementById("answersPanel");
+    const exportCsvBtn      = document.getElementById("exportCsvBtn");
+    const exportPdfBtn      = document.getElementById("exportPdfBtn");
+    const printArea         = document.getElementById("frbPrintArea");
+
+    // ── Minimal CSV parser (handles quoted fields, commas, CRLF/LF) ──
+    function parseCSV(text) {
+        const rows = [];
+        let row = [], field = "", inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (text[i + 1] === '"') { field += '"'; i++; }
+                    else { inQuotes = false; }
+                } else {
+                    field += c;
+                }
+            } else if (c === '"') {
+                inQuotes = true;
+            } else if (c === ",") {
+                row.push(field); field = "";
+            } else if (c === "\n" || c === "\r") {
+                if (c === "\r" && text[i + 1] === "\n") i++;
+                row.push(field); field = "";
+                if (row.some(v => v.trim() !== "")) rows.push(row);
+                row = [];
+            } else {
+                field += c;
+            }
+        }
+        if (field.length || row.length) { row.push(field); rows.push(row); }
+        return rows;
+    }
+
+    function isNumericColumn(values) {
+        return values.length > 0 && values.every(v => v === "" || !isNaN(parseFloat(v)));
+    }
+
+    function detectLabelColumn(headers) {
+        return headers.find(h => /time|date|stamp/i.test(h)) || null;
+    }
+
+    function loadCSV(text) {
+        const rows = parseCSV(text);
+        if (!rows.length) { alert("This CSV file appears to be empty."); return; }
+
+        const headers = rows[0].map(h => h.trim()).filter(h => h !== "");
+        if (!headers.length) { alert("No column headers found in the first row."); return; }
+
+        columnsData = {};
+        headers.forEach(h => { columnsData[h] = []; });
+
+        for (let i = 1; i < rows.length; i++) {
+            headers.forEach((h, idx) => {
+                const v = rows[i][idx] !== undefined ? rows[i][idx].trim() : "";
+                columnsData[h].push(v);
+            });
+        }
+
+        labelColumnName = detectLabelColumn(headers);
+        const rowCount = columnsData[headers[0]].length;
+        rowLabels = labelColumnName
+            ? columnsData[labelColumnName].slice()
+            : Array.from({ length: rowCount }, (_, i) => "Row " + (i + 1));
+
+        // Fresh file: reset all builders/results.
+        chain = [];
+        formulas = [];
+
+        renderPlates(headers);
+        renderChain();
+        renderFormulas();
+        renderAnswers();
+    }
+
+    function renderPlates(headers) {
+        columnPlatesEl.innerHTML = "";
+        headers.forEach(h => {
+            const numeric = isNumericColumn(columnsData[h]);
+            const isLabelCol = h === labelColumnName;
+            const plate = document.createElement("div");
+            plate.className = "frb-plate";
+            plate.draggable = true;
+            plate.dataset.column = h;
+            plate.innerHTML =
+                '<div class="frb-plate-title">' + h + (isLabelCol ? " (row label)" : "") + "</div>" +
+                '<div class="frb-plate-meta">' + columnsData[h].length + " rows &middot; " +
+                (numeric ? "numeric" : "text") + "</div>";
+
+            plate.addEventListener("dragstart", function (e) {
+                e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "column", value: h }));
+                e.dataTransfer.effectAllowed = "copy";
+            });
+
+            columnPlatesEl.appendChild(plate);
+        });
+    }
+
+    // ── Chip palettes: operators / bracket / functions / aggregates ──
+    document.querySelectorAll('.frb-chip[data-kind="operator"]').forEach(chip => {
+        chip.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "operator", value: chip.dataset.op }));
+            e.dataTransfer.effectAllowed = "copy";
+        });
+    });
+    document.querySelectorAll('.frb-chip[data-kind="bracket"]').forEach(chip => {
+        chip.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "bracket" }));
+            e.dataTransfer.effectAllowed = "copy";
+        });
+    });
+    document.querySelectorAll('.frb-chip[data-kind="function"]').forEach(chip => {
+        chip.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "function", value: chip.dataset.func }));
+            e.dataTransfer.effectAllowed = "copy";
+        });
+    });
+    document.querySelectorAll('.frb-chip[data-kind="aggregate"]').forEach(chip => {
+        chip.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "aggregate", value: chip.dataset.agg }));
+            e.dataTransfer.effectAllowed = "copy";
+        });
+    });
+
+    function opLabel(op) {
+        return { "+": "+", "-": "\u2212", "*": "\u00d7", "/": "\u00f7", "^": "^", "%": "%" }[op] || op;
+    }
+
+    function applyUnaryFunc(func, val) {
+        switch (func) {
+            case "ABS": return Math.abs(val);
+            case "ROUND": return Math.round(val);
+            case "SQRT": return val >= 0 ? Math.sqrt(val) : 0;
+            default: return val;
+        }
+    }
+
+    function applyBinaryOp(op, x, y) {
+        switch (op) {
+            case "+": return x + y;
+            case "-": return x - y;
+            case "*": return x * y;
+            case "/": return y !== 0 ? x / y : 0;
+            case "^": return Math.pow(x, y);
+            case "%": return y !== 0 ? x % y : 0;
+            default: return x;
+        }
+    }
+
+    function computeAggregate(col, func) {
+        const raw = columnsData[col] || [];
+        const nums = raw.filter(v => v !== "" && !isNaN(parseFloat(v))).map(v => parseFloat(v));
+
+        let value;
+        switch (func) {
+            case "SUM": value = nums.reduce((s, v) => s + v, 0); break;
+            case "AVG": value = nums.length ? nums.reduce((s, v) => s + v, 0) / nums.length : 0; break;
+            case "MIN": value = nums.length ? Math.min(...nums) : 0; break;
+            case "MAX": value = nums.length ? Math.max(...nums) : 0; break;
+            case "COUNT": value = raw.filter(v => v !== "").length; break;
+            default: value = 0;
+        }
+        return Math.round(value * 100) / 100;
+    }
+
+    // ── Generic term/chain evaluation (handles column / group / aggregate terms, recursively) ──
+    function computeTermValue(term, rowIdx) {
+        let val;
+        if (term.termType === "column") {
+            val = parseFloat(columnsData[term.value][rowIdx]) || 0;
+        } else if (term.termType === "group") {
+            val = computeChainValue(term.items, rowIdx);
+        } else if (term.termType === "aggregate") {
+            val = computeAggregate(term.column, term.aggFunc);
+        } else {
+            val = 0;
+        }
+        if (term.wrapFunc) val = applyUnaryFunc(term.wrapFunc, val);
+        return val;
+    }
+
+    // Reduce a chain (array alternating term, operator, term...) left-to-right, no precedence.
+    function computeChainValue(arr, rowIdx) {
+        let acc = computeTermValue(arr[0], rowIdx);
+        for (let i = 1; i < arr.length; i += 2) {
+            const op = arr[i].value;
+            const nextVal = computeTermValue(arr[i + 1], rowIdx);
+            acc = applyBinaryOp(op, acc, nextVal);
+        }
+        return acc;
+    }
+
+    function computeRowValue(arr, rowIdx) {
+        return Math.round(computeChainValue(arr, rowIdx) * 100) / 100;
+    }
+
+    // ── Completeness checks ──
+    function isTermComplete(term) {
+        if (term.termType === "column") return true;
+        if (term.termType === "aggregate") return !!term.column;
+        if (term.termType === "group") {
+            if (!term.items.length || term.items.length % 2 === 0) return false;
+            for (let i = 0; i < term.items.length; i += 2) {
+                if (!isTermComplete(term.items[i])) return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function isChainComplete(arr) {
+        if (!arr.length || arr.length % 2 === 0) return false;
+        for (let i = 0; i < arr.length; i += 2) {
+            if (!isTermComplete(arr[i])) return false;
+        }
+        return true;
+    }
+
+    // ── Display strings (recursive, mirrors evaluation structure) ──
+    function termDisplay(term) {
+        let base;
+        if (term.termType === "column") {
+            base = term.value;
+        } else if (term.termType === "group") {
+            const inner = term.items.map((it, idx) => idx % 2 === 0 ? termDisplay(it) : opLabel(it.value)).join(" ");
+            base = term.wrapFunc ? inner : "(" + inner + ")";
+        } else if (term.termType === "aggregate") {
+            base = term.aggFunc + "(" + (term.column || "?") + ")";
+        } else {
+            base = "?";
+        }
+        return term.wrapFunc ? (term.wrapFunc + "(" + base + ")") : base;
+    }
+
+    function chainDisplay(arr) {
+        return arr.map((it, idx) => idx % 2 === 0 ? termDisplay(it) : opLabel(it.value)).join(" ");
+    }
+
+    // ── Reusable token builders (used by both the top-level chain and bracket-group interiors) ──
+    function buildOperatorEl(text, onRemove) {
+        const el = document.createElement("span");
+        el.className = "frb-token frb-token-op";
+        el.innerHTML = "<span>" + text + "</span><span class=\"frb-token-x\">&times;</span>";
+        el.title = "Click to remove this and everything after it";
+        el.addEventListener("click", function (e) { e.stopPropagation(); onRemove(); });
+        return el;
+    }
+
+    function buildColumnTermEl(term, onRemove, onWrap) {
+        const el = document.createElement("span");
+        el.className = "frb-token frb-token-col";
+        el.innerHTML =
+            (term.wrapFunc ? '<span class="frb-token-func-badge">' + term.wrapFunc + "</span>" : "") +
+            "<span>" + term.value + "</span><span class=\"frb-token-x\">&times;</span>";
+
+        el.addEventListener("dragover", function (e) { e.preventDefault(); e.stopPropagation(); el.classList.add("frb-token-hover"); });
+        el.addEventListener("dragleave", function (e) { e.stopPropagation(); el.classList.remove("frb-token-hover"); });
+        el.addEventListener("drop", function (e) {
+            e.preventDefault();
+            el.classList.remove("frb-token-hover");
+            let dropped;
+            try { dropped = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+            if (dropped && dropped.kind === "function") {
+                e.stopPropagation();
+                onWrap(dropped.value);
+            }
+            // Any other drop kind (column/operator/etc.) is left unhandled here so it bubbles up
+            // to the parent track (top-level chain or bracket interior) and can add the next item.
+        });
+
+        el.title = "Click to remove this and everything after it. Drop a function chip here to wrap it.";
+        el.addEventListener("click", function (e) { e.stopPropagation(); onRemove(); });
+        return el;
+    }
+
+    function buildAggregateTermEl(term, onRemove, onWrap, onColumnDrop) {
+        const el = document.createElement("span");
+        el.className = "frb-token frb-token-agg";
+        const prefix = term.wrapFunc ? '<span class="frb-token-func-badge">' + term.wrapFunc + "</span>" : "";
+        if (term.column) {
+            el.innerHTML = prefix + "<span>" + term.aggFunc + "(" + term.column + ")</span><span class=\"frb-token-x\">&times;</span>";
+        } else {
+            el.innerHTML = prefix + "<span>" + term.aggFunc + "(</span><span class=\"frb-agg-slot\">drop column</span><span>)</span><span class=\"frb-token-x\">&times;</span>";
+        }
+
+        el.addEventListener("dragover", function (e) { e.preventDefault(); e.stopPropagation(); el.classList.add("frb-token-hover"); });
+        el.addEventListener("dragleave", function (e) { e.stopPropagation(); el.classList.remove("frb-token-hover"); });
+        el.addEventListener("drop", function (e) {
+            e.preventDefault();
+            el.classList.remove("frb-token-hover");
+            let dropped;
+            try { dropped = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+            if (!dropped) return;
+            if (dropped.kind === "function") { e.stopPropagation(); onWrap(dropped.value); return; }
+            if (dropped.kind === "column" && !term.column) { e.stopPropagation(); onColumnDrop(dropped.value); return; }
+            // Any other drop (e.g. an operator once this aggregate already has its column) bubbles up
+            // to the parent track so the chain can keep growing.
+        });
+
+        el.title = term.column
+            ? "Click to remove this and everything after it. Drop a function chip here to wrap it."
+            : "Drop a column onto this to complete the aggregate.";
+        el.addEventListener("click", function (e) { e.stopPropagation(); onRemove(); });
+        return el;
+    }
+
+    function buildGroupTermEl(term, outerIdx) {
+        const wrapper = document.createElement("span");
+        wrapper.className = "frb-token frb-token-group";
+
+        if (term.wrapFunc) {
+            const badge = document.createElement("span");
+            badge.className = "frb-token-func-badge";
+            badge.textContent = term.wrapFunc;
+            wrapper.appendChild(badge);
+        }
+
+        const openParen = document.createElement("span");
+        openParen.textContent = "(";
+        wrapper.appendChild(openParen);
+
+        const inner = document.createElement("span");
+        inner.className = "frb-group-inner";
+        if (!term.items.length) {
+            const ph = document.createElement("span");
+            ph.className = "frb-chain-empty";
+            ph.textContent = "drop columns + operators";
+            inner.appendChild(ph);
+        } else {
+            term.items.forEach((subItem, subIdx) => {
+                if (subItem.kind === "operator") {
+                    inner.appendChild(buildOperatorEl(opLabel(subItem.value), function () {
+                        term.items = term.items.slice(0, subIdx);
+                        renderChain();
+                    }));
+                } else {
+                    inner.appendChild(buildColumnTermEl(subItem,
+                        function () { term.items = term.items.slice(0, subIdx); renderChain(); },
+                        function (func) { subItem.wrapFunc = func; renderChain(); }
+                    ));
+                }
+            });
+        }
+
+        inner.addEventListener("dragover", function (e) { e.preventDefault(); inner.classList.add("frb-slot-hover"); });
+        inner.addEventListener("dragleave", function () { inner.classList.remove("frb-slot-hover"); });
+        inner.addEventListener("drop", function (e) {
+            e.preventDefault();
+            inner.classList.remove("frb-slot-hover");
+            let dropped;
+            try { dropped = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+            if (!dropped) return;
+
+            if (dropped.kind === "function") {
+                // Don't handle here — let it bubble up to the wrapper, which wraps the whole group.
+                return;
+            }
+
+            e.stopPropagation();
+            formulaError.style.display = "none";
+            const expected = term.items.length % 2 === 0 ? "column" : "operator";
+            if (dropped.kind !== expected) {
+                formulaError.textContent = expected === "column"
+                    ? "Inside brackets, drop a column here next."
+                    : "Inside brackets, drop an operator (+ \u2212 \u00d7 \u00f7 ^ %) here next.";
+                formulaError.style.display = "block";
+                return;
+            }
+            if (dropped.kind === "column") {
+                term.items.push({ kind: "term", termType: "column", value: dropped.value, wrapFunc: null });
+            } else {
+                term.items.push({ kind: "operator", value: dropped.value });
+            }
+            renderChain();
+        });
+        wrapper.appendChild(inner);
+
+        const closeParen = document.createElement("span");
+        closeParen.textContent = ")";
+        wrapper.appendChild(closeParen);
+
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "frb-token-x";
+        removeBtn.innerHTML = "&times;";
+        removeBtn.title = "Remove this bracket group and everything after it";
+        removeBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            chain = chain.slice(0, outerIdx);
+            renderChain();
+        });
+        wrapper.appendChild(removeBtn);
+
+        // Whole-group wrap-func drop (drop a function chip onto the bracket, not on a specific inner column).
+        wrapper.addEventListener("dragover", function (e) { e.preventDefault(); wrapper.classList.add("frb-token-hover"); });
+        wrapper.addEventListener("dragleave", function () { wrapper.classList.remove("frb-token-hover"); });
+        wrapper.addEventListener("drop", function (e) {
+            e.preventDefault();
+            wrapper.classList.remove("frb-token-hover");
+            let dropped;
+            try { dropped = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+            if (dropped && dropped.kind === "function") {
+                term.wrapFunc = dropped.value;
+                renderChain();
+            }
+        });
+
+        return wrapper;
+    }
+
+    // ── Top-level formula chain builder (drop target: columns, brackets, aggregates, operators) ──
+    chainTrack.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        chainTrack.classList.add("frb-slot-hover");
+    });
+    chainTrack.addEventListener("dragleave", function () {
+        chainTrack.classList.remove("frb-slot-hover");
+    });
+    chainTrack.addEventListener("drop", function (e) {
+        e.preventDefault();
+        chainTrack.classList.remove("frb-slot-hover");
+        formulaError.style.display = "none";
+
+        let token;
+        try { token = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+        if (!token || !token.kind) return;
+
+        if (token.kind === "function") {
+            formulaError.textContent = "Drop function chips (ABS/ROUND/SQRT) directly onto a column, aggregate, or bracket group already in the chain, not onto empty space.";
+            formulaError.style.display = "block";
+            return;
+        }
+
+        const expected = chain.length % 2 === 0 ? "term" : "operator";
+
+        if (expected === "operator") {
+            if (token.kind !== "operator") {
+                formulaError.textContent = "Drop an operator (+ \u2212 \u00d7 \u00f7 ^ %) here \u2014 two terms can't sit next to each other.";
+                formulaError.style.display = "block";
+                return;
+            }
+            chain.push({ kind: "operator", value: token.value });
+            renderChain();
+            return;
+        }
+
+        // expected === "term"
+        if (token.kind === "column") {
+            chain.push({ kind: "term", termType: "column", value: token.value, wrapFunc: null });
+        } else if (token.kind === "bracket") {
+            chain.push({ kind: "term", termType: "group", items: [], wrapFunc: null });
+        } else if (token.kind === "aggregate") {
+            chain.push({ kind: "term", termType: "aggregate", aggFunc: token.value, column: null, wrapFunc: null });
+        } else {
+            formulaError.textContent = "Drop a column, a bracket ( ), or an aggregate (SUM/AVG/MIN/MAX/COUNT) here \u2014 a formula must start with a term, and a term must follow every operator.";
+            formulaError.style.display = "block";
+            return;
+        }
+        renderChain();
+    });
+
+    function renderChain() {
+        chainTrack.innerHTML = "";
+        if (!chain.length) {
+            chainTrack.appendChild(chainPlaceholder);
+        } else {
+            chain.forEach((item, idx) => {
+                if (item.kind === "operator") {
+                    chainTrack.appendChild(buildOperatorEl(opLabel(item.value), function () {
+                        chain = chain.slice(0, idx);
+                        renderChain();
+                    }));
+                } else if (item.termType === "column") {
+                    chainTrack.appendChild(buildColumnTermEl(item,
+                        function () { chain = chain.slice(0, idx); renderChain(); },
+                        function (func) { item.wrapFunc = func; renderChain(); }
+                    ));
+                } else if (item.termType === "aggregate") {
+                    chainTrack.appendChild(buildAggregateTermEl(item,
+                        function () { chain = chain.slice(0, idx); renderChain(); },
+                        function (func) { item.wrapFunc = func; renderChain(); },
+                        function (col) { item.column = col; renderChain(); }
+                    ));
+                } else if (item.termType === "group") {
+                    chainTrack.appendChild(buildGroupTermEl(item, idx));
+                }
+            });
+        }
+        saveFormulaBtn.disabled = !isChainComplete(chain);
+    }
+
+    clearChainBtn.addEventListener("click", function () {
+        chain = [];
+        formulaError.style.display = "none";
+        renderChain();
+    });
+
+    saveFormulaBtn.addEventListener("click", function () {
+        if (saveFormulaBtn.disabled) return;
+
+        const name = chainDisplay(chain);
+        const values = rowLabels.map((_, i) => computeRowValue(chain, i));
+
+        formulas.push({ id: Date.now(), name: name, values: values });
+        chain = [];
+        formulaError.style.display = "none";
+        renderChain();
+        renderFormulas();
+        renderAnswers();
+    });
+
+    function renderFormulas() {
+        savedFormulasEl.innerHTML = "";
+        if (!formulas.length) {
+            savedFormulasEl.innerHTML = '<p style="font-size:12px;color:#999;">No formulas saved yet.</p>';
+            return;
+        }
+        formulas.forEach(f => {
+            const card = document.createElement("div");
+            card.className = "frb-formula-card";
+            card.innerHTML =
+                '<div><div class="frb-formula-name">' + f.name + '</div>' +
+                '<div class="frb-formula-meta">' + f.values.length + ' rows computed</div></div>' +
+                '<button type="button" class="frb-formula-remove" data-id="' + f.id + '" aria-label="Remove">&times;</button>';
+            savedFormulasEl.appendChild(card);
+        });
+        savedFormulasEl.querySelectorAll(".frb-formula-remove").forEach(btn => {
+            btn.addEventListener("click", function () {
+                formulas = formulas.filter(f => String(f.id) !== btn.dataset.id);
+                renderFormulas();
+                renderAnswers();
+            });
+        });
+    }
+
+    function renderAnswers() {
+        answersPanelEl.innerHTML = "";
+        if (!formulas.length) {
+            answersPanelEl.innerHTML = '<p style="font-size:12px;color:#999;">Save a formula to see row-by-row answers here.</p>';
+            return;
+        }
+        formulas.forEach(f => {
+            const card = document.createElement("div");
+            card.className = "frb-answer-card";
+
+            const header = document.createElement("div");
+            header.className = "frb-answer-header";
+            header.textContent = f.name + (labelColumnName ? " (by " + labelColumnName + ")" : "");
+            card.appendChild(header);
+
+            const rowsWrap = document.createElement("div");
+            rowsWrap.className = "frb-answer-rows";
+            rowLabels.forEach((label, i) => {
+                const item = document.createElement("div");
+                item.className = "frb-answer-row-item";
+                item.innerHTML = "<span>" + label + "</span><span>" + f.values[i] + "</span>";
+                rowsWrap.appendChild(item);
+            });
+            card.appendChild(rowsWrap);
+
+            answersPanelEl.appendChild(card);
+        });
+    }
+
+    // ── CSV file upload ──
+    csvFileInput.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        csvFileName.textContent = file.name;
+
+        const reader = new FileReader();
+        reader.onload = function (ev) { loadCSV(ev.target.result); };
+        reader.onerror = function () { alert("Could not read that file."); };
+        reader.readAsText(file);
+    });
+
+    // ── Export to CSV: per-row answers table ──
+    exportCsvBtn.addEventListener("click", function () {
+        if (!formulas.length) {
+            alert("Save at least one formula first.");
+            return;
+        }
+
+        let csv = "";
+        const labelHeader = labelColumnName || "Row";
+        csv += '"' + labelHeader + '"';
+        formulas.forEach(f => { csv += ',"' + f.name.replace(/"/g, '""') + '"'; });
+        csv += "\n";
+        rowLabels.forEach((label, i) => {
+            csv += '"' + String(label).replace(/"/g, '""') + '"';
+            formulas.forEach(f => { csv += "," + f.values[i]; });
+            csv += "\n";
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "fake_build_report_results.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    });
+
+    // ── Export to PDF (browser print → "Save as PDF") ──
+    exportPdfBtn.addEventListener("click", function () {
+        if (!formulas.length) {
+            alert("Save at least one formula first.");
+            return;
+        }
+
+        const labelHeader = labelColumnName || "Row";
+        let html = "<h2>Fake Build Report \u2014 Results</h2>";
+        html += "<h3>Answers</h3><table><tr><th>" + labelHeader + "</th>";
+        formulas.forEach(f => { html += "<th>" + f.name + "</th>"; });
+        html += "</tr>";
+        rowLabels.forEach((label, i) => {
+            html += "<tr><td>" + label + "</td>";
+            formulas.forEach(f => { html += "<td>" + f.values[i] + "</td>"; });
+            html += "</tr>";
+        });
+        html += "</table>";
+
+        printArea.innerHTML = html;
+        window.print();
+    });
+});
+</script>
+{% endblock %}

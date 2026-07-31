@@ -106,15 +106,6 @@
                 {% endif %}
             </div>
 
-<!--            <a href="#" class="building-tab">-->
-<!--                <span class="building-tab-icon"><i class="fa-solid fa-bolt"></i></span>-->
-<!--                <span class="building-tab-label">Energy</span>-->
-<!--            </a>-->
-<!--            <a href="#" class="building-tab">-->
-<!--                <span class="building-tab-icon"><i class="fa-regular fa-file-lines"></i></span>-->
-<!--                <span class="building-tab-label">Reports</span>-->
-<!--            </a>-->
-
             <a href="{% url 'building_energy' selected_building.pk %}" class="building-tab {% if building_tab == 'energy' %}active{% endif %}">
                 <span class="building-tab-icon"><i class="fa-solid fa-bolt"></i></span>
                 <span class="building-tab-label">Energy</span>
@@ -135,10 +126,31 @@
                 <span class="building-tab-label">Systems</span>
             </a>
 
-            <a href="{% url 'building_settings_profile' selected_building.pk %}" class="building-tab {% if building_tab == 'settings' %}active{% endif %}">
-                <span class="building-tab-icon"><i class="fa-solid fa-gear"></i></span>
-                <span class="building-tab-label">Settings</span>
-            </a>
+<!--            <a href="{% url 'building_settings_profile' selected_building.pk %}" class="building-tab {% if building_tab == 'settings' %}active{% endif %}">-->
+<!--                <span class="building-tab-icon"><i class="fa-solid fa-gear"></i></span>-->
+<!--                <span class="building-tab-label">Settings</span>-->
+<!--            </a>-->
+
+            {# ── Settings dropdown ── #}
+            <div class="building-tab dropdown-tab {% if building_tab == 'settings' %}active{% endif %}" id="settingsDropdownWrap">
+                <button type="button" class="building-tab-button" id="settingsDropdownToggle" aria-expanded="false" aria-haspopup="true">
+                    <span class="building-tab-icon"><i class="fa-solid fa-gear"></i></span>
+                    <span class="building-tab-label">Settings</span>
+                </button>
+
+                {% if selected_building %}
+                <div class="building-tab-dropdown" id="settingsDropdownMenu">
+                    <a href="{% url 'building_settings_profile' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-regular fa-id-card"></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="{% url 'building_settings_fake' selected_building.pk %}" class="building-tab-dropdown-link">
+                        <i class="fa-solid fa-flask"></i>
+                        <span>Fake</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
         </nav>
 
         <section class="building-page-content">
@@ -188,6 +200,7 @@
 
         initDropdown("vaultDropdownWrap", "vaultDropdownToggle", "vaultDropdownMenu");
         initDropdown("insightsDropdownWrap", "insightsDropdownToggle", "insightsDropdownMenu");
+        initDropdown("settingsDropdownWrap", "settingsDropdownToggle", "settingsDropdownMenu");
 
         document.addEventListener("click", function () {
             document.querySelectorAll(".building-tab-dropdown.show").forEach(menu => {

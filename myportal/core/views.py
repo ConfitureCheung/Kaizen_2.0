@@ -1127,3 +1127,21 @@ def building_settings_profile(request, pk):
             "building_tab": "settings",
         },
     )
+
+
+def building_settings_fake(request, pk):
+    building = get_object_or_404(Building.objects.select_related("client"), pk=pk)
+
+    if not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
+
+    return render(
+        request,
+        "core/fake_build_report.html",
+        {
+            **_sidebar_ctx(request),
+            "selected_building": building,
+            "selected_client": building.client,
+            "building_tab": "settings",
+        },
+    )
