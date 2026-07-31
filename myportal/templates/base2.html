@@ -151,44 +151,6 @@
 
     <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const wrap = document.getElementById("vaultDropdownWrap");
-        const toggle = document.getElementById("vaultDropdownToggle");
-        const menu = document.getElementById("vaultDropdownMenu");
-
-        if (wrap && toggle && menu) {
-            toggle.addEventListener("click", function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const isOpen = menu.classList.contains("show");
-                menu.classList.toggle("show", !isOpen);
-                wrap.classList.toggle("open", !isOpen);
-                toggle.setAttribute("aria-expanded", !isOpen ? "true" : "false");
-            });
-
-            menu.addEventListener("click", function (e) {
-                e.stopPropagation();
-            });
-
-            document.addEventListener("click", function () {
-                menu.classList.remove("show");
-                wrap.classList.remove("open");
-                toggle.setAttribute("aria-expanded", "false");
-            });
-
-            document.addEventListener("keydown", function (e) {
-                if (e.key === "Escape") {
-                    menu.classList.remove("show");
-                    wrap.classList.remove("open");
-                    toggle.setAttribute("aria-expanded", "false");
-                }
-            });
-        }
-    });
-    </script>
-
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
         function initDropdown(wrapId, toggleId, menuId) {
             const wrap = document.getElementById(wrapId);
             const toggle = document.getElementById(toggleId);
@@ -255,6 +217,4 @@
     });
     </script>
 </body>
-
-
 </html>
