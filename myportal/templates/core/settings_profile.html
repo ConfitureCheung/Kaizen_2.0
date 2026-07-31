@@ -116,7 +116,7 @@
                 </tr>
                 <tr>
                     <td>Location ID:</td>
-                    <td>{{ selected_building.pk|default:"5245" }}</td>
+                    <td>{{ selected_building.pk|default:"" }}</td>
                 </tr>
                 <tr>
                     <td>Country:</td>
@@ -128,7 +128,7 @@
                 </tr>
                 <tr>
                     <td>City:</td>
-                    <td>{{ selected_building.city|default:"Hong Kong" }}</td>
+                    <td>{{ selected_building.city|default:"" }}</td>
                 </tr>
                 <tr>
                     <td>Postal Code:</td>
@@ -136,11 +136,11 @@
                 </tr>
                 <tr>
                     <td>Address:</td>
-                    <td>{{ selected_building.address|default:"12 Wylie Road, Yau Ma Tei" }}</td>
+                    <td>{{ selected_building.address|default:"" }}</td>
                 </tr>
                 <tr>
                     <td>Time Zone:</td>
-                    <td>{{ selected_building.timezone|default:"Asia/Hong_Kong" }}</td>
+                    <td>{{ selected_building.timezone|default:"" }}</td>
                 </tr>
                 <tr>
                     <td>Phone Number:</td>
@@ -164,13 +164,22 @@
                 </tr>
                 <tr>
                     <td>Building Type:</td>
-                    <td>{{ selected_building.building_type|default:"Large Hospital" }}</td>
+                    <td>
+                        {# Pulled from building_detail.html's "Type" dropdown (building_type field) #}
+                        {{ selected_building.get_building_type_display|default:"" }}
+                    </td>
                 </tr>
                 <tr>
                     <td>Building Size:</td>
-                    <td>{{ selected_building.gross_floor_area|default:"1" }} ft²</td>
+                    <td>
+                        {# Combines building_detail.html's "Gross floor area" + "Unit" fields #}
+                        {% if selected_building.gross_floor_area %}
+                            {{ selected_building.gross_floor_area }} {{ selected_building.get_area_unit_display }}
+                        {% else %}
+                            ""
+                        {% endif %}
+                    </td>
                 </tr>
-                <tr>
                     <td>Building Occupancy:</td>
                     <td>{{ selected_building.occupancy|default:"" }}</td>
                 </tr>
