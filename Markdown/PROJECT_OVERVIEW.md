@@ -3,17 +3,20 @@
 ## Current status
 The BLENDY Django project includes the `accounts` and `core` apps, shared authenticated templates, route wiring for dashboard, users, groups, buildings, clients, profile, Vault, Insight, Energy & Report, and Charts/Systems/Settings sections, and a common visual system in `static/css/app.css` / `app2.css`.
 The project is still intentionally hybrid: some screens are queryset-backed and some remain layout-first or sample-data driven while interface work progresses in stages.
-The shared navigation includes a fully interactive sliding left panel in `base.html` triggered by the hamburger button, rendering a Client → Building tree from queryset-backed context, with smooth CSS slide animation, overlay backdrop, keyboard dismissal, and tree expand/collapse. Inside a building, `base2.html` provides the building-tab sub-nav with all 8 icons fully wired: **Dashboard, Vault, Insights, Energy, Reports, Charts, Systems, Settings**. Vault and Insights are each exposed as **dropdown sub-navs** (multiple linked pages behind one icon); Settings is currently still a **single plain link** to `core/settings_profile.html`.
-The Profile (account-level), Client, Groups, Users, Dashboard, left panel, Django admin, Vault, Insight, Energy & Report, Charts, and Systems sections are all functionally/layout complete. The **next active focus is an independent drag-and-drop prototype**: converting Settings into a dropdown sub-nav (like Vault/Insights) with two options — **"Profile"** (the existing `core/settings_profile.html`, relocated as-is) and **"Fake"** (a new `core/fake_build_report.html` page used to prototype building a report layout via drag-and-drop). This prototype is deliberately kept separate from the previously planned Settings/Profile edit-save function, which is now **deferred** — the project expects many more inner pages to be added behind each building-tab icon over time, so this drag-and-drop pattern is being proven out in isolation first. Buildings pages and the `building_dashboard.html` card content remain deferred to later stages as well.
+The shared navigation includes a fully interactive sliding left panel in `base.html` triggered by the hamburger button, rendering a Client → Building tree from queryset-backed context, with smooth CSS slide animation, overlay backdrop, keyboard dismissal, and tree expand/collapse. Inside a building, `base2.html` provides the building-tab sub-nav with all 8 icons fully wired: **Dashboard, Vault, Insights, Energy, Reports, Charts, Systems, Settings**. Vault, Insights, and **Settings** are each exposed as **dropdown sub-navs** (multiple linked pages behind one icon).
+The Profile (account-level), Client, Groups, Users, Dashboard, left panel, Django admin, Vault, Insight, Energy & Report, Charts, and Systems sections are all functionally/layout complete. **Settings is now a dropdown** with two live options: **"Profile"** (`core/settings_profile.html`, read-only, edit/save deferred) and **"Fake"** (`core/fake_build_report.html`, a complete drag-and-drop formula/report-builder prototype using a single-line chain track in its mid panel).
+
+The **next active focus is a second, parallel prototype**: `core/fake_build_report2.html`, which must match `fake_build_report.html`'s functional scope exactly (CSV upload, column plates, operator/grouping/function/aggregate chips, per-row answers, CSV/PDF export) but replaces the mid panel's **single-line chain track** with an **open canvas where dragged items become freestanding nodes that the user links together with connection lines** (a node-graph / flow-diagram style formula builder). This is being built the same way `fake_build_report.html` was: as an isolated experiment, kept separate from the deferred Settings/Profile edit-save function. Buildings pages and the `building_dashboard.html` card content remain deferred to later stages as well.
 
 ## Existing structure relevant to the next step
-- `myportal/templates/base2.html` — has the dropdown sub-nav pattern already implemented for Vault (`vaultDropdownWrap`/`vaultDropdownToggle`/`vaultDropdownMenu`) and Insights (`insightsDropdownWrap`/`insightsDropdownToggle`/`insightsDropdownMenu`), plus a shared `initDropdown(wrapId, toggleId, menuId)` JS helper. Settings (`building_settings_profile` link) still needs to be converted to this same pattern.
-- `myportal/templates/core/settings_profile.html` — currently a read-only `.profile-table` of Building fields with a toolbar Edit button (`.edit-btn`) that has no behaviour; will be relocated under the new Settings dropdown as "Profile", unchanged for now. Its edit/save function remains a separate, deferred task.
-- `myportal/templates/core/fake_build_report.html` — **does not exist yet**; new template to be created as the drag-and-drop report-builder prototype (sample/fake content only).
-- `myportal/core/views.py` — `building_settings_profile` view currently only handles `GET`/render. A new `building_settings_fake` view needs to be added, following the same permission-check pattern (`_user_can_access_object_client`) as `building_settings_profile` / `building_charts` / `building_systems`.
-- `myportal/core/urls.py` — the `# ── Settings ──` block currently has one route (`buildings/<int:pk>/settings/profile/`); a new route (e.g. `buildings/<int:pk>/settings/fake/`) needs to be added for the Fake page.
-- `myportal/static/js/app.js` — likely home for the drag-and-drop wiring, pending the library/tooling decision (CDN `<script>` vs. an `npm`-managed build step).
-- `myportal/core/models.py` — the `Building` model already defines every field shown on the (unchanged, for now) Profile page — no migration expected from this round of work.
+- `myportal/templates/base2.html` — has the dropdown sub-nav pattern implemented for Vault (`vaultDropdownWrap`/`vaultDropdownToggle`/`vaultDropdownMenu`), Insights (`insightsDropdownWrap`/`insightsDropdownToggle`/`insightsDropdownMenu`), and now Settings (`settingsDropdownWrap`/`settingsDropdownToggle`/`settingsDropdownMenu`, linking to "Profile" and "Fake"), plus a shared `initDropdown(wrapId, toggleId, menuId)` JS helper. A third Settings link ("Fake 2") needs to be added for the new prototype.
+- `myportal/templates/core/settings_profile.html` — read-only `.profile-table` of Building fields with a toolbar Edit button (`.edit-btn`) that has no behaviour; reached via the Settings dropdown's "Profile" option. Its edit/save function remains a separate, deferred task.
+- `myportal/templates/core/fake_build_report.html` — **complete**: a drag-and-drop formula/report-builder prototype (CSV upload, column plates, operator/bracket/function/aggregate chips, a single horizontal chain-track builder, saved formulas, per-row answers, CSV/PDF export). Vanilla JS only, no drag-and-drop library or npm tooling.
+- `myportal/templates/core/fake_build_report2.html` — **does not exist yet**; new template for the node/graph-based variant of the same builder (sample/fake content only).
+- `myportal/core/views.py` — `building_settings_profile` and `building_settings_fake` views exist, both following the same permission-check pattern (`_user_can_access_object_client`). A new `building_settings_fake2` view needs to be added, following the same pattern.
+- `myportal/core/urls.py` — the `# ── Settings ──` block has `buildings/<int:pk>/settings/profile/` and `buildings/<int:pk>/settings/fake/`; a new route (e.g. `buildings/<int:pk>/settings/fake2/`) needs to be added.
+- `myportal/static/js/app.js` — general app JS; the drag-and-drop logic for both fake report pages lives inline in each template's `extra_js` block rather than here, to keep each prototype self-contained.
+- `myportal/core/models.py` — the `Building` model already defines every field shown on the (unchanged, for now) Profile page — no migration expected from Settings/Fake-related work.
 
 ## Completed pages
 | Page area | Pages | Status |
@@ -33,19 +36,23 @@ The Profile (account-level), Client, Groups, Users, Dashboard, left panel, Djang
 | Reports | `report.html` | ✅ Complete |
 | Charts | `chart.html` | ✅ Complete (layout-first) |
 | Systems | `systems.html` | ✅ Complete (layout-first) |
-| **Settings → Profile** | `settings_profile.html` | 🔲 Read-only display, Edit button has no function — **deferred** (relocating into the new Settings dropdown, behaviour unchanged for now) |
-| **Settings → Fake** | `fake_build_report.html` | 🔲 **Next (in progress)** — new standalone drag-and-drop report-builder prototype |
+| **Settings → Profile** | `settings_profile.html` | 🔲 Read-only display, Edit button has no function — **deferred** |
+| **Settings → Fake** | `fake_build_report.html` | ✅ Complete — single-line chain-track formula/report-builder prototype |
+| **Settings → Fake 2** | `fake_build_report2.html` | 🔲 **Next (in progress)** — node-graph / connection-line variant of the same builder |
 | Building Dashboard | `core/building_dashboard.html` | 🔲 Deferred — layout skeleton only, no card content yet |
 
-## Settings section — planned work
-Settings is being restructured from a single link into a **dropdown sub-nav**, matching the existing Vault and Insights pattern in `base2.html`. The plan:
+## Settings section — current state
+Settings is now a **dropdown sub-nav** in `base2.html`, matching the Vault and Insights pattern, exposing:
+- **Profile** → `building_settings_profile` view / `core/settings_profile.html` — read-only; edit/save function remains a separate, deferred task (see below).
+- **Fake** → `building_settings_fake` view / `core/fake_build_report.html` — **complete**. A standalone drag-and-drop prototype: CSV upload on the left produces draggable column "plates"; the mid panel offers chip palettes for operators (`+ − × ÷ ^ %`), grouping (brackets), functions (`ABS`/`ROUND`/`SQRT`), and aggregates (`SUM`/`AVG`/`MIN`/`MAX`/`COUNT`), all dragged into a single horizontal **chain track** that enforces term/operator alternation and supports nested bracket groups; formulas are named, saved, and listed; the right panel shows per-row answers per saved formula with CSV export and print-to-PDF export. Implemented entirely in vanilla JS (HTML5 drag-and-drop events) — no CDN library or npm/build step was needed, resolving the earlier open tooling question.
 
-- Convert the Settings entry in `base2.html` into a `dropdown-tab` (copy the `vaultDropdownWrap`/`insightsDropdownWrap` markup and register it with `initDropdown(...)`), exposing two links:
-  - **Profile** → existing `building_settings_profile` view / `core/settings_profile.html`, relocated but functionally unchanged (still read-only; the edit/save function is a separate, deferred task — see below).
-  - **Fake** → new `building_settings_fake` view / new `core/fake_build_report.html` template.
-- Build `core/fake_build_report.html` as a **standalone drag-and-drop prototype** for assembling a report out of draggable blocks/elements. It uses sample/fake data and is explicitly not wired into real building/report data yet — its purpose is to prove out a drag-and-drop UX pattern that can later be reused across other inner pages behind the remaining building-tab icons.
-- Decide on the drag-and-drop implementation: a client-side JS library is required (e.g. SortableJS, interact.js, GridStack.js); whether it's loaded via a CDN `<script>` tag or via `npm`/a `package.json` with a bundler is **not yet decided** and should be settled alongside this work.
-- This task is intentionally **decoupled** from the Settings/Profile edit-save plan below, to keep the drag-and-drop experiment isolated while the project's inner-page structure (one icon → many pages) keeps growing in complexity.
+### Settings → Fake 2 (next prototype, in progress)
+A second prototype, `core/fake_build_report2.html`, is being built with the **same functional requirements** as Fake (CSV upload, column plates, operator/grouping/function/aggregate chips, saved formulas, per-row answers, CSV/PDF export), but with a different mid-panel interaction:
+- Instead of a single-line chain track, the mid panel becomes an **open canvas/panel**. Dragging a column, operator, bracket, function, or aggregate onto it creates a **freestanding node** at the drop position (not constrained to one line).
+- The user **draws connection lines between nodes** to link them together (e.g. connecting a column node → an operator node → a second column node to express `ColA + ColB`), building the formula as a small node-graph / flow-diagram rather than a flat strip.
+- Implementation is expected to reuse `fake_build_report.html`'s CSV parsing, numeric-column detection, aggregate computation, and CSV/PDF export logic, adding only the new node-positioning and SVG-based connection-line rendering on top.
+- Default approach is to stay library-free (vanilla JS + an SVG overlay for the lines), consistent with the choice made for `fake_build_report.html`, unless the connection-line math proves genuinely unworkable by hand.
+- This is being treated as its own **independent trial task**, exposed via a new "Fake 2" link added to the existing `settingsDropdownMenu`, alongside "Profile" and "Fake" — not wired into real building/report data.
 
 ### Settings → Profile edit/save function (deferred)
 The previously planned edit/save function for `core/settings_profile.html` is **not part of the current round** but remains a known future task:
@@ -58,10 +65,11 @@ The previously planned edit/save function for `core/settings_profile.html` is **
 ## Charts, Systems & Settings section — status
 - **`building_charts`** — resolves the active building from `pk`, enforces client-access permission, renders `core/chart.html` with `building_tab="charts"`. ✅ Complete (layout-first).
 - **`building_systems`** — same pattern, renders `core/systems.html` with `building_tab="systems"`. ✅ Complete (layout-first).
-- **`building_settings_profile`** — same pattern, renders `core/settings_profile.html` with `building_tab="settings"`. 🔲 Read-only only; edit/save function deferred. To be relocated under the new Settings dropdown as "Profile".
-- **`building_settings_fake`** — **new, to be added**; same permission-check pattern, renders `core/fake_build_report.html`. 🔲 Next task (drag-and-drop report-builder prototype).
-- **URL patterns** — `/buildings/<int:pk>/charts/`, `/buildings/<int:pk>/systems/`, and `/buildings/<int:pk>/settings/profile/` are registered in `core/urls.py`; a new `/buildings/<int:pk>/settings/fake/` pattern is to be added.
-- `chart.html` and `systems.html` extend `base2.html` with correct `active` state highlighting under their own single-link icons. Settings is being upgraded from a single link to a dropdown (like Vault/Insights) to host both "Profile" and "Fake".
+- **`building_settings_profile`** — same pattern, renders `core/settings_profile.html` with `building_tab="settings"`. 🔲 Read-only only; edit/save function deferred.
+- **`building_settings_fake`** — same pattern, renders `core/fake_build_report.html`. ✅ Complete — single-line chain-track formula/report-builder prototype.
+- **`building_settings_fake2`** — **new, to be added**; same permission-check pattern, renders `core/fake_build_report2.html`. 🔲 Next task (node-graph/connection-line report-builder prototype).
+- **URL patterns** — `/buildings/<int:pk>/charts/`, `/buildings/<int:pk>/systems/`, `/buildings/<int:pk>/settings/profile/`, and `/buildings/<int:pk>/settings/fake/` are registered in `core/urls.py`; a new `/buildings/<int:pk>/settings/fake2/` pattern is to be added.
+- `chart.html` and `systems.html` extend `base2.html` with correct `active` state highlighting under their own single-link icons. Settings is a dropdown (like Vault/Insights) hosting "Profile" and "Fake", soon to add "Fake 2".
 
 ## Energy & Report section — completed state
 The Energy & Report section is fully implemented:
@@ -78,7 +86,7 @@ The Insight section is fully implemented (layout-first stage):
 - **`golden_standard_configuration`** — configuration page for Golden Standard reference values.
 - **`insight_subscription`** — subscription management page.
 - **URL patterns** — all registered under `/buildings/<int:pk>/insights/` in `core/urls.py`.
-- All five templates extend `base2.html`, use static/sample data, and share consistent sub-navigation tabs, exposed via the `insightsDropdownWrap` dropdown in `base2.html` — the reference pattern the new Settings dropdown will copy.
+- All five templates extend `base2.html`, use static/sample data, and share consistent sub-navigation tabs, exposed via the `insightsDropdownWrap` dropdown in `base2.html`.
 
 ## Vault section — completed state
 The Vault section is fully implemented:
@@ -87,7 +95,7 @@ The Vault section is fully implemented:
 - **`trend_logs.html`** — list-view template extending `base2.html`.
 - **`objects.html`** — split-panel list/detail template extending `base2.html`.
 - **URL patterns** — `/buildings/<int:pk>/vault/trend-logs/` and `/buildings/<int:pk>/vault/objects/` are registered in `core/urls.py`.
-- Exposed via the `vaultDropdownWrap` dropdown in `base2.html` — the other reference pattern the new Settings dropdown will copy.
+- Exposed via the `vaultDropdownWrap` dropdown in `base2.html`.
 
 ## Django admin — completed state
 Django admin is fully consistent with the frontend portal view:
@@ -102,19 +110,19 @@ The three Buildings screens remain layout-only or sample-data driven. Their func
 - **`building_report.html`** — report view, not yet pulling real data or rendering live charts.
 
 ## Building Dashboard — deferred state
-`core/building_dashboard.html` (behind the first "Dashboard" icon in `base2.html`) still renders only an empty layout skeleton with five blank card sections (Building Profile, Dashboard/chart, Insights, Energy Breakdown, Green Facts), per `Layout_Ref/07b_New_Dashboard.png`. This remains a separate, still-pending stage, after both the Settings/Fake prototype and the (deferred) Settings/Profile edit-save function are completed.
+`core/building_dashboard.html` (behind the first "Dashboard" icon in `base2.html`) still renders only an empty layout skeleton with five blank card sections (Building Profile, Dashboard/chart, Insights, Energy Breakdown, Green Facts), per `Layout_Ref/07b_New_Dashboard.png`. This remains a separate, still-pending stage, after the Settings/Fake 2 prototype and the (deferred) Settings/Profile edit-save function are completed.
 
 ## Files most relevant for the next step
-- `myportal/templates/base2.html` — convert the Settings link into a dropdown-tab (Profile / Fake), copying the existing Vault/Insights dropdown markup and JS.
-- `myportal/templates/core/fake_build_report.html` — new template for the drag-and-drop report-builder prototype.
-- `myportal/core/views.py` — add the new `building_settings_fake` view.
-- `myportal/core/urls.py` — add the new `buildings/<int:pk>/settings/fake/` route.
-- `myportal/static/js/app.js` (or a new scoped JS/CDN include) — drag-and-drop wiring, once the library/tooling decision is made.
+- `myportal/templates/base2.html` — add a "Fake 2" link to the existing `settingsDropdownMenu`, alongside "Profile" and "Fake".
+- `myportal/templates/core/fake_build_report2.html` — new template for the node/graph-based report-builder prototype.
+- `myportal/core/views.py` — add the new `building_settings_fake2` view.
+- `myportal/core/urls.py` — add the new `buildings/<int:pk>/settings/fake2/` route.
+- `myportal/templates/core/fake_build_report.html` — reference implementation to reuse CSV/aggregate/export logic from.
 
 ## Project guardrails
 - Keep changes targeted.
 - Avoid unrelated refactors.
 - Preserve the current Django structure and naming style.
 - Reuse the shared shell and CSS language already present in the project.
-- Keep the Settings/Fake drag-and-drop prototype decoupled from the deferred Settings/Profile edit-save work.
+- Keep each Settings/Fake prototype (and the deferred Settings/Profile edit-save work) decoupled from one another.
 - Ask for complete updated files for touched files only when using AI help.
