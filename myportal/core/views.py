@@ -1058,3 +1058,72 @@ def building_reports(request, pk):
             "building_tab": "reports",
         },
     )
+
+
+# ─────────────────────────────────────────────
+# CHARTS
+# ─────────────────────────────────────────────
+
+@login_required
+def building_charts(request, pk):
+    building = get_object_or_404(Building.objects.select_related("client"), pk=pk)
+
+    if not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
+
+    return render(
+        request,
+        "core/chart.html",
+        {
+            **_sidebar_ctx(request),
+            "selected_building": building,
+            "selected_client": building.client,
+            "building_tab": "charts",
+        },
+    )
+
+
+# ─────────────────────────────────────────────
+# SYSTEMS
+# ─────────────────────────────────────────────
+
+@login_required
+def building_systems(request, pk):
+    building = get_object_or_404(Building.objects.select_related("client"), pk=pk)
+
+    if not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
+
+    return render(
+        request,
+        "core/systems.html",
+        {
+            **_sidebar_ctx(request),
+            "selected_building": building,
+            "selected_client": building.client,
+            "building_tab": "systems",
+        },
+    )
+
+
+# ─────────────────────────────────────────────
+# SETTINGS / PROFILE
+# ─────────────────────────────────────────────
+
+@login_required
+def building_settings_profile(request, pk):
+    building = get_object_or_404(Building.objects.select_related("client"), pk=pk)
+
+    if not _user_can_access_object_client(request, building.client_id):
+        raise PermissionDenied
+
+    return render(
+        request,
+        "core/settings_profile.html",
+        {
+            **_sidebar_ctx(request),
+            "selected_building": building,
+            "selected_client": building.client,
+            "building_tab": "settings",
+        },
+    )

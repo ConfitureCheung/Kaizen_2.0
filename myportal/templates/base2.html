@@ -125,15 +125,17 @@
                 <span class="building-tab-label">Reports</span>
             </a>
 
-            <a href="#" class="building-tab">
+            <a href="{% url 'building_charts' selected_building.pk %}" class="building-tab {% if building_tab == 'charts' %}active{% endif %}">
                 <span class="building-tab-icon"><i class="fa-solid fa-chart-column"></i></span>
                 <span class="building-tab-label">Charts</span>
             </a>
-            <a href="#" class="building-tab">
+
+            <a href="{% url 'building_systems' selected_building.pk %}" class="building-tab {% if building_tab == 'systems' %}active{% endif %}">
                 <span class="building-tab-icon"><i class="fa-solid fa-gears"></i></span>
                 <span class="building-tab-label">Systems</span>
             </a>
-            <a href="#" class="building-tab">
+
+            <a href="{% url 'building_settings_profile' selected_building.pk %}" class="building-tab {% if building_tab == 'settings' %}active{% endif %}">
                 <span class="building-tab-icon"><i class="fa-solid fa-gear"></i></span>
                 <span class="building-tab-label">Settings</span>
             </a>

@@ -1,0 +1,377 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Charts | {{ selected_building.name }}{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Charts{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Charts{% endblock %}
+
+{% block extra_css %}
+<style>
+    .building-page-content.chart-page {
+        padding: 0;
+        background: #f3f4f6;
+        border: 1px solid #d9d9d9;
+    }
+
+    .chart-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 10px 14px;
+        background: #ececec;
+        border-bottom: 1px solid #d8d8d8;
+    }
+
+    .chart-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chart-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .icon-btn,
+    .control-btn,
+    .action-btn,
+    .add-chart-btn {
+        border: 1px solid #cfcfcf;
+        background: #fff;
+        color: #444;
+        border-radius: 3px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        text-decoration: none;
+    }
+
+    .icon-btn {
+        width: 30px;
+    }
+
+    .control-btn {
+        min-width: 54px;
+        padding: 0 10px;
+        gap: 6px;
+    }
+
+    .search-input {
+        width: 340px;
+        max-width: 100%;
+        height: 28px;
+        border: 1px solid #cfcfcf;
+        border-radius: 3px;
+        padding: 0 10px;
+        font-size: 12px;
+        background: #fff;
+    }
+
+    .chart-table-wrap {
+        overflow-x: auto;
+        background: #f7f7f7;
+    }
+
+    .chart-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        background: #f7f7f7;
+    }
+
+    .chart-table th,
+    .chart-table td {
+        border-bottom: 1px solid #dcdcdc;
+        vertical-align: top;
+        padding: 10px 10px;
+        font-size: 12px;
+        color: #444;
+    }
+
+    .chart-table thead th {
+        background: #efefef;
+        color: #333;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .chart-table th:nth-child(1),
+    .chart-table td:nth-child(1) {
+        width: 250px;
+    }
+
+    .chart-table th:nth-child(2),
+    .chart-table td:nth-child(2) {
+        width: 640px;
+    }
+
+    .chart-table th:nth-child(3),
+    .chart-table td:nth-child(3) {
+        width: auto;
+    }
+
+    .chart-template-link {
+        color: #6aa7c8;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .chart-template-link:hover {
+        text-decoration: underline;
+    }
+
+    .working-chart-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .working-chart-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .working-chart-name {
+        position: relative;
+        padding-left: 10px;
+        color: #444;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
+    .working-chart-name::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 3px;
+        width: 2px;
+        height: 16px;
+        background: #4ba34f;
+    }
+
+    .row-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .action-btn {
+        width: 28px;
+    }
+
+    .add-chart-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+
+    .add-chart-btn {
+        padding: 0 10px;
+        gap: 6px;
+        font-weight: 600;
+    }
+
+    .chart-table-info {
+        padding: 10px 12px 14px;
+        font-size: 12px;
+        color: #555;
+        background: #f3f4f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chart-page building-page-content">
+    <div class="chart-toolbar">
+        <div class="chart-toolbar-left">
+            <button type="button" class="icon-btn" aria-label="Add chart">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+        <div class="chart-toolbar-right">
+            <button type="button" class="control-btn" aria-label="Rows per page">
+                100 <i class="fa-solid fa-caret-down"></i>
+            </button>
+            <input type="text" class="search-input" placeholder="Search..." aria-label="Search">
+        </div>
+    </div>
+
+    <div class="chart-table-wrap">
+        <table class="chart-table">
+            <thead>
+                <tr>
+                    <th>Chart Template Name <i class="fa-solid fa-arrow-up"></i></th>
+                    <th>Description</th>
+                    <th>Working Charts</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <a href="#" class="chart-template-link">Dashboard Chart</a>
+                    </td>
+                    <td>
+                        Accepts 1-20 Trend Logs as input along with user configuration to produce a user customized chart.
+                        The chart is limited to a single graph and a single table. This chart performs a delta operation,
+                        filters negative values, and then does a sum aggregation on the data series, which makes it ideal
+                        for cumulative inputs. Example: 5 data sets are used - 2 areas, 2 columns, and 1 line. All series
+                        are on the primary axis. The Series # Table Summary is set to average, min, max, average, and no
+                        aggregate for series 1-5 respectively.
+                    </td>
+                    <td>
+                        <div class="working-chart-list">
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">QE Power Consumption Monthly Comparison</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">Recent Years Vs Last Years</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="add-chart-row">
+                                <button type="button" class="add-chart-btn">
+                                    <i class="fa-solid fa-plus"></i> Add Working Chart
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="#" class="chart-template-link">Energy Chart</a>
+                    </td>
+                    <td>
+                        Accepts 1-20 Trend Logs as input along with user configuration to produce a user customized chart.
+                        The chart is limited to a single graph and a single table. This chart performs an average aggregation
+                        on the data series, which makes it ideal for non-cumulative inputs. Example: 5 data sets are used -
+                        1 column, 2 stacked columns, 1 scatter, and 1 line. The column and stacked column series are both on
+                        the primary axis, while the scatter and line series are both on the secondary axis. The Series #
+                        Table Summary is set to no aggregate, sum, max, average, and average for series 1-5 respectively.
+                    </td>
+                    <td>
+                        <div class="working-chart-list">
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">[HP-01 &amp; HP-02] Block T QE Monthly Total Cooling Load Report</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">[HRC] Block T QE Monthly Total Cooling Load Report</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">[OFAC] Block T QE Monthly Total Cooling Load Report</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">All Building Performance List Report</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">Block T QE Average Cooling Load Report</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">Block T Queen Elizabeth Hospital Monthly Airside Report - Testing</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">Block T Queen Elizabeth Hospital Monthly Chiller Plant COP Report</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">Testing</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="add-chart-row">
+                                <button type="button" class="add-chart-btn">
+                                    <i class="fa-solid fa-plus"></i> Add Working Chart
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <a href="#" class="chart-template-link">KPI - Poor Performance Digest</a>
+                    </td>
+                    <td>
+                        This chart generates a table with all systems of a certain type in your building along with their
+                        respective KPI scores. The systems are ordered from worst performing system to best performing system,
+                        and the KPI scores are calculated based on a user selected time range. Contact CS if you wish to
+                        implement this chart into your building.
+                    </td>
+                    <td>
+                        <div class="working-chart-list">
+                            <div class="working-chart-row">
+                                <div class="working-chart-name">KPI_SAT_SP_ERROR_%WEEKLY_R1</div>
+                                <div class="row-actions">
+                                    <button type="button" class="action-btn" aria-label="View"><i class="fa-regular fa-eye"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Edit"><i class="fa-solid fa-pencil"></i></button>
+                                    <button type="button" class="action-btn" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                            <div class="add-chart-row">
+                                <button type="button" class="add-chart-btn">
+                                    <i class="fa-solid fa-plus"></i> Add Working Chart
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-table-info">Displaying 1 to 5 of 5 entries</div>
+</div>
+{% endblock %}

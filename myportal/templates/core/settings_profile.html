@@ -1,0 +1,193 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Settings Profile | {{ selected_building.name }}{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Settings / Profile{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-profile-page {
+        padding: 0;
+        background: #f3f4f6;
+        border: 1px solid #d9d9d9;
+    }
+
+    .settings-toolbar {
+        padding: 10px 12px;
+        background: #efefef;
+        border-bottom: 1px solid #d9d9d9;
+    }
+
+    .edit-btn {
+        width: 30px;
+        height: 28px;
+        border: 1px solid #cfcfcf;
+        background: #fff;
+        color: #444;
+        border-radius: 3px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+
+    .profile-card {
+        background: #f7f7f7;
+    }
+
+    .profile-image-panel {
+        height: 138px;
+        display: flex;
+        align-items: center;
+        padding: 18px 12px;
+        border-bottom: 1px solid #d9d9d9;
+        background: #f7f7f7;
+    }
+
+    .profile-image-box {
+        width: 82px;
+        height: 62px;
+        overflow: hidden;
+        border: 1px solid #d7d7d7;
+        background: #fff;
+    }
+
+    .profile-image-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .profile-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        background: #f7f7f7;
+    }
+
+    .profile-table td {
+        border-bottom: 1px solid #d9d9d9;
+        padding: 14px 10px;
+        font-size: 12px;
+        color: #444;
+        vertical-align: middle;
+    }
+
+    .profile-table td:first-child {
+        width: 46%;
+        color: #555;
+        font-weight: 700;
+    }
+
+    .profile-table td:last-child {
+        width: 54%;
+        color: #4b4b4b;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-profile-page">
+    <div class="settings-toolbar">
+        <button type="button" class="edit-btn" aria-label="Edit profile">
+            <i class="fa-solid fa-pencil"></i>
+        </button>
+    </div>
+
+    <div class="profile-card">
+        <div class="profile-image-panel">
+            <div class="profile-image-box">
+                {% if selected_building.photo %}
+                    <img src="{{ selected_building.photo.url }}" alt="{{ selected_building.name }}">
+                {% else %}
+                    <img src="{% static 'img/building-thumb.jpg' %}" alt="{{ selected_building.name }}">
+                {% endif %}
+            </div>
+        </div>
+
+        <table class="profile-table">
+            <tbody>
+                <tr>
+                    <td>Name:</td>
+                    <td>{{ selected_building.name|default:"Block T 伊利沙伯醫院日間醫療中心新翼" }}</td>
+                </tr>
+                <tr>
+                    <td>Location ID:</td>
+                    <td>{{ selected_building.pk|default:"5245" }}</td>
+                </tr>
+                <tr>
+                    <td>Country:</td>
+                    <td>Hong Kong</td>
+                </tr>
+                <tr>
+                    <td>Province/State:</td>
+                    <td>{{ selected_building.state|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>City:</td>
+                    <td>{{ selected_building.city|default:"Hong Kong" }}</td>
+                </tr>
+                <tr>
+                    <td>Postal Code:</td>
+                    <td>{{ selected_building.postal|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Address:</td>
+                    <td>{{ selected_building.address|default:"12 Wylie Road, Yau Ma Tei" }}</td>
+                </tr>
+                <tr>
+                    <td>Time Zone:</td>
+                    <td>{{ selected_building.timezone|default:"Asia/Hong_Kong" }}</td>
+                </tr>
+                <tr>
+                    <td>Phone Number:</td>
+                    <td>{{ selected_building.building_phone|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Fax Number:</td>
+                    <td>{{ selected_building.building_fax|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Technical Contact:</td>
+                    <td>{{ selected_building.tech_contact_name|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Technical Contact Phone Number:</td>
+                    <td>{{ selected_building.tech_contact_phone|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Technical Contact Email Address:</td>
+                    <td>{{ selected_building.tech_contact_email|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Building Type:</td>
+                    <td>{{ selected_building.building_type|default:"Large Hospital" }}</td>
+                </tr>
+                <tr>
+                    <td>Building Size:</td>
+                    <td>{{ selected_building.gross_floor_area|default:"1" }} ft²</td>
+                </tr>
+                <tr>
+                    <td>Building Occupancy:</td>
+                    <td>{{ selected_building.occupancy|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Weather Station(s):</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>ENERGY STAR® Property ID:</td>
+                    <td>{{ selected_building.energy_star_id|default:"" }}</td>
+                </tr>
+                <tr>
+                    <td>Building Dashboard Chart:</td>
+                    <td>{{ selected_building.dashboard_chart|default:"Block T QE Average Cooling Load Report" }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

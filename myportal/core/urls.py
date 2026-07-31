@@ -55,6 +55,15 @@ urlpatterns = [
 
     # ── Reports ──
     path("buildings/<int:pk>/reports/", views.building_reports, name="building_reports"),
+
+    # ── Charts ──
+    path("buildings/<int:pk>/charts/", views.building_charts, name="building_charts"),
+
+    # ── Systems ──
+    path("buildings/<int:pk>/systems/", views.building_systems, name="building_systems"),
+
+    # ── Settings ──
+    path("buildings/<int:pk>/settings/profile/", views.building_settings_profile, name="building_settings_profile"),
 ]
 
 
