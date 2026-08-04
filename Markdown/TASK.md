@@ -1,68 +1,76 @@
 # TASK
 
 ## Current task
-Build **`core/fake_build_report2.html`**, a second standalone drag-and-drop formula/report-builder prototype, matching the **exact same functional requirements** as the now-complete `core/fake_build_report.html`, but with a **different mid-panel layout**: instead of dragging items into a single horizontal "one-liner" chain track, this version drags items into an **open panel/canvas and links them together with connection lines** (a node-graph / flow-diagram style builder).
+**Backend ↔ frontend consistency pass.** The previous task (`core/fake_build_report2.html`, the node-graph formula-builder prototype) is confirmed **complete** — template, view, URL, and nav link all exist and work. This task shifts focus to auditing and fixing places where `core/views.py` (backend) and the templates it renders (frontend) have drifted apart, found by direct inspection of the current code.
 
-This is treated as an **independent trial task**, the same way `fake_build_report.html` was — deliberately decoupled from the deferred Settings/Profile edit-save function (see "Deferred work" below), and without modifying the existing, working `fake_build_report.html`.
+## Background: what closed out the previous round
+- `core/fake_build_report2.html` (1,605 lines) implements the full node-canvas + SVG connection-line formula builder: CSV upload, draggable column plates, operator/bracket/function/aggregate palettes, freestanding nodes on `#frb2Canvas`, connections drawn via `#frb2Svg`, per-row evaluation, saved formulas, CSV export, and print-to-PDF export. Vanilla JS + SVG only — no library was needed, confirming the original default assumption.
+- `building_settings_fake2` view exists in `core/views.py`, matching the `building_settings_fake` / `building_settings_profile` permission-check pattern (`@login_required`... actually note: `building_settings_fake`/`building_settings_fake2` currently have **no** `@login_required` decorator either — verify this during the audit below, since it wasn't flagged in the original plan).
+- `buildings/<int:pk>/settings/fake2/` route exists in `core/urls.py`.
+- `settingsDropdownMenu` in `base2.html` has a live "Fake 2" link alongside "Profile" and "Fake".
 
-## Immediate objective
-1. **Functional parity with `fake_build_report.html`**:
-   - Left panel: CSV upload, header/column detection (numeric vs. text), draggable column "plates".
-   - Draggable primitives: operators (`+ − × ÷ ^ %`), grouping (bracket), functions (`ABS`/`ROUND`/`SQRT`), aggregates (`SUM`/`AVG`/`MIN`/`MAX`/`COUNT`).
-   - Ability to assemble one or more formulas from these primitives, save them, and list saved formulas.
-   - Right panel: per-row computed answers for each saved formula, plus CSV export and print-to-PDF export.
-2. **New mid-panel interaction — canvas + connection lines**: replace the single-line chain track with an open drop area where each dragged item (column, operator, bracket, function, aggregate) becomes a **freestanding node** positioned wherever it's dropped. The user then **draws a connection line from one node to another** to indicate how they combine into a formula (e.g. column node → operator node → column node to express `ColA + ColB`). Removing a node or a connection should update the resulting formula/graph accordingly.
-3. **Navigation**: add a **"Fake 2"** link to the existing `settingsDropdownMenu` in `base2.html` (alongside "Profile" and "Fake"), following the exact dropdown-link markup already used there, plus a new `building_settings_fake2` view and `buildings/<int:pk>/settings/fake2/` URL, mirroring `building_settings_fake` / `buildings/<int:pk>/settings/fake/`.
-4. **Implementation approach for nodes + connection lines**: default to staying library-free — absolutely positioned, draggable node `div`s plus an `<svg>` overlay whose `<line>`/`<path>` elements are recalculated whenever a connected node moves. Only consider a small graph/diagram library (e.g. jsPlumb, LeaderLine) if hand-rolled SVG positioning proves genuinely unworkable, and document that decision explicitly if made.
+**No further work is needed on fake_build_report2.html, its view, its URL, or its nav link.**
 
-## Background from the previous step
-The Settings dropdown restructuring and the first prototype are now complete:
-- `base2.html`'s Settings entry is a working dropdown (`settingsDropdownWrap`/`settingsDropdownToggle`/`settingsDropdownMenu`), matching the Vault (`vaultDropdownWrap`) and Insights (`insightsDropdownWrap`) pattern, with "Profile" and "Fake" links.
-- `building_settings_profile` and `building_settings_fake` view functions exist in `core/views.py`, each `@login_required`, resolving the building via `pk` and enforcing `_user_can_access_object_client`.
-- URL patterns `/buildings/<int:pk>/settings/profile/` and `/buildings/<int:pk>/settings/fake/` are registered in `core/urls.py`.
-- **`core/fake_build_report.html` is complete**: a working drag-and-drop formula/report builder using a single horizontal chain track in its mid panel (CSV → column plates → operator/bracket/function/aggregate chips → chain track → saved formulas → per-row answers → CSV/PDF export). Built entirely in vanilla JS (no drag-and-drop library, no npm/build tooling) — this settles the tooling question raised in the previous round in favor of a library-free approach.
-- `settings_profile.html` still renders a static `.profile-table` of Building fields with a toolbar Edit button with no behaviour yet. **Its edit/save function remains deferred** (see "Deferred work" below).
-- `building_dashboard.html` (five empty placeholder cards) is a **separate, still-pending** stage and is explicitly out of scope for this round.
+## Immediate objective: fix three concrete inconsistency classes
 
-## Scope for the next coding round
+### 1. Normalize permission/auth enforcement across building-tab views
+Audit confirmed these views do **not** follow the same pattern as `building_charts`/`building_systems`/`building_settings_profile` (`@login_required` + `_user_can_access_object_client(request, building.client_id)` + `**_sidebar_ctx(request)` in context):
+- `vault_trend_logs`, `vault_objects` — no `@login_required`, no permission check, no `_sidebar_ctx`.
+- `insight_management`, `create_insight_report`, `manage_rules`, `golden_standard_configuration`, `insight_subscription` — same gaps.
+- `building_energy`, `building_reports` — have `@login_required` but are missing the `_user_can_access_object_client` check and `_sidebar_ctx`.
+- **Also verify** `building_settings_fake` and `building_settings_fake2` — during this audit these did not show a `@login_required` decorator in the current file; confirm and add if missing, since they render pages reachable by pk in the URL just like the others.
+
+**Fix:** bring all of the above in line with the Charts/Systems/Settings pattern — add `@login_required`, add the `_user_can_access_object_client` check (raise `PermissionDenied` on failure), and spread `**_sidebar_ctx(request)` into the render context so the left panel renders correctly on every building-tab page.
+
+### 2. Fix data-binding bugs in `core/templates/core/settings_profile.html`
+Confirmed by reading the template line-by-line:
+- Missing `<tr>` opening tag directly before the "Building Occupancy:" row — malformed table markup.
+- "Country:" row is hardcoded to the literal text `Hong Kong`, not bound to `selected_building.country`/`get_country_display`.
+- "Location ID:" row is bound to `selected_building.pk` — the model's actual `code` field (`Building.code`) is never rendered anywhere on this page. Decide: should "Location ID" show `code` instead, or should a separate `code` row be added, keeping `pk` if that's intentional?
+- "Weather Station(s):" has no data source — there's no matching model field; decide whether to remove the row, add a model field, or leave it clearly marked as not-yet-implemented rather than silently blank.
+- `default:` fallbacks contain leftover sample data (`"Block T 伊利沙伯醫院日間醫療中心新翼"` for name, `"Block T QE Average Cooling Load Report"` for dashboard_chart) instead of generic/blank fallbacks — replace with `default:""` or a neutral placeholder.
+- Fields that exist on `Building` but have no row on this page at all: `currency`, `latitude`, `longitude`, `weather_unit_group`, `base_temp_cooling`, `base_temp_heating`, `building_database`, `is_active`, `created_at`, `updated_at`. Several of these (currency, lat/long, weather unit group) are already collected via `building_detail.html`'s form — decide which of these should get a corresponding read-only row here for full backend/frontend parity, versus which are intentionally internal-only.
+
+**Fix:** repair the markup, correct/confirm each field binding, remove hardcoded sample fallbacks, and add rows (or explicitly document exclusion) for the currently-missing model fields.
+
+### 3. Move hardcoded secrets into environment config
+`WEATHER_API_KEY` and `GOOGLE_MAPS_API_KEY` are hardcoded string literals at the top of `core/views.py`, despite `myportal/.env` already existing in the project for exactly this purpose.
+
+**Fix:** move both keys into `.env`, read them via `django-environ`/`os.environ`/whatever pattern `config/settings.py` already uses for other secrets, and update `core/views.py` to reference the settings value instead of a literal.
+
+## Scope for this round
 
 **In scope:**
-- `myportal/templates/core/fake_build_report2.html` — new template, the node/graph-based report-builder prototype (sample/fake content only), matching `fake_build_report.html`'s functional scope.
-- `myportal/templates/base2.html` — add a "Fake 2" link to the existing `settingsDropdownMenu`.
-- `myportal/core/views.py` — add a new `building_settings_fake2` view, following the `building_settings_fake`/`building_settings_profile` pattern (permission check, `selected_building`/`selected_client`/`building_tab` context).
-- `myportal/core/urls.py` — add a new route (e.g. `buildings/<int:pk>/settings/fake2/` → `building_settings_fake2`) under the `# ── Settings ──` block.
-- Node-canvas + connection-line JS wiring — vanilla JS + SVG overlay by default, reusing `fake_build_report.html`'s CSV parsing / aggregate computation / CSV-PDF export logic where practical.
+- `myportal/core/views.py` — permission/decorator normalization on `vault_trend_logs`, `vault_objects`, the 5 insight views, `building_energy`, `building_reports`; verify and fix `building_settings_fake`/`building_settings_fake2` decorators; move `WEATHER_API_KEY`/`GOOGLE_MAPS_API_KEY` to settings/env.
+- `myportal/templates/core/settings_profile.html` — markup fix + field-binding corrections + fallback cleanup + missing-field decision.
+- `myportal/config/settings.py` and `myportal/.env` — add the two API key settings, read from env.
 
 **Out of scope for this round:**
-- Any changes to the existing, working `core/fake_build_report.html`.
-- Implementing the Settings/Profile edit-save function (form class, `POST` handling, editable fields) — this is **deferred** and will be picked back up as its own task later (see below).
-- Any changes to `admin.py` files or `admin_custom.css`.
-- Structural changes to `static/css/app.css` / `app2.css` (small additive/scoped styles for the new canvas/nodes/connection lines only if unavoidable).
-- New Django models or migrations.
-- `core/building_dashboard.html` and its view — remains a separate future stage.
-- Buildings, app-level Dashboard, Groups, Users, Clients, account-level Profile, Vault, Insight, Energy, Reports, Charts, or Systems pages.
+- Any changes to `fake_build_report.html` or `fake_build_report2.html` — both are done, don't touch them.
+- Implementing the Settings/Profile **edit-save** function (form class, `POST` handling) — still a separate, deferred task; this round only fixes the *read-only display* bindings.
+- `building_dashboard.html`'s remaining static placeholder cards (Insights, Energy Breakdown) — separate future stage.
+- Buildings pages (`buildings.html`, `building_detail.html`, `building_saved.html`, `building_report.html`) — these were previously mis-documented as "deferred" but are actually already functional; leave them alone this round unless the audit surfaces a specific bug in them.
+- Groups, Users, Clients, account-level Profile, Charts, Systems — already consistent, no changes needed.
+- Any changes to `admin.py` files, `admin_custom.css`, or new Django models/migrations.
 
-## Deferred work: Settings/Profile edit-save function
-Kept for reference, not part of this round: make the existing `.edit-btn` on `settings_profile.html` toggle an editable form (name, code, country, state, city, postal, address, timezone, building_phone, building_fax, tech_contact_name/phone/email, building_type, gross_floor_area, occupancy, energy_star_id, dashboard_chart, photo) that submits to `building_settings_profile` via `POST`, validates, and saves to the `Building` model — following the account-level `accounts/profile.html` + `accounts/forms.py` + `accounts/views.py` pattern. All fields already exist on the `Building` model in `core/models.py`; no migration expected when this is picked back up.
+## Deferred work (unchanged, kept for reference)
+- **Settings/Profile edit-save function**: make `.edit-btn` toggle an editable form covering all `Building` fields (including `photo`), submitting via `POST` to `building_settings_profile`, validated and saved — following the `accounts/profile.html` + `accounts/forms.py` + `accounts/views.py` pattern. Do this only *after* the read-only field-binding fixes above, so the edit form and the display are both correct against the same field list.
+- **`building_dashboard.html`**: wire the Insights and Energy Breakdown cards to real data once a data source/query is defined for them.
 
 ## Starting point
-- Review `myportal/templates/core/fake_build_report.html` in full — its CSV parsing (`parseCSV`), numeric-column detection, chip palettes, chain-track builder, aggregate computation (`computeAggregate`), and CSV/PDF export logic (`exportCsvBtn`/`exportPdfBtn`) are the functional baseline `fake_build_report2.html` must match, and much of this logic can likely be reused/adapted as-is.
-- Review `myportal/templates/base2.html`'s `settingsDropdownMenu` markup to confirm exactly how to add the third "Fake 2" link.
-- Review `myportal/core/views.py`'s `building_settings_fake` and `building_settings_profile` for the view pattern (permission check, context variables) to follow for the new `building_settings_fake2` view.
-- Review `myportal/core/urls.py`'s `# ── Settings ──` block to see where to add the new `fake2` route.
-- Design the node/connection data model (node types: column, operator, bracket/group, function, aggregate; connections between them) and decide how a connected graph maps to an evaluable formula before writing `fake_build_report2.html`'s JS.
+- Re-read `core/views.py` top-to-bottom for every `building_*`/`vault_*`/`insight_*` function and note which ones deviate from the `@login_required` + `_user_can_access_object_client` + `_sidebar_ctx` pattern (list above is a starting checklist, confirm against the live file since line numbers will shift).
+- Re-read `core/templates/core/settings_profile.html` fully and cross-reference every `selected_building.<field>` reference against the `Building` model field list in `core/models.py`.
+- Check `config/settings.py` for the existing pattern used to load other secrets from `.env` (e.g. `SECRET_KEY`, DB credentials) and mirror that pattern for the two API keys.
 
 ## Expected deliverables
-1. New `myportal/templates/core/fake_build_report2.html` implementing a working node-canvas + connection-line prototype with the same functional scope as `fake_build_report.html` (sample/fake data, no real save/persist logic required beyond in-memory state).
-2. Updated `myportal/templates/base2.html` with a "Fake 2" link added to the Settings dropdown.
-3. New `myportal/core/views.py` function `building_settings_fake2` (and corresponding URL in `core/urls.py`).
-4. A documented decision on the node-positioning/connection-line implementation approach (vanilla JS + SVG vs. a library), including rationale.
+1. Updated `core/views.py` with consistent `@login_required` + permission-check + `_sidebar_ctx` usage across all building-tab views, and API keys sourced from settings/env instead of hardcoded.
+2. Updated `core/templates/core/settings_profile.html` with the markup bug fixed, correct field bindings, cleaned-up fallbacks, and a resolved decision on the currently-missing model fields (either added as new rows or explicitly left out with a one-line note in the template/comment for future reference).
+3. Updated `config/settings.py` / `.env` with `WEATHER_API_KEY` and `GOOGLE_MAPS_API_KEY` as environment-driven settings.
+4. `Markdown/HANDOFF.md`, `Markdown/PROJECT_OVERVIEW.md`, `Markdown/TASK.md` kept in sync as this consistency pass progresses.
 
 ## Acceptance criteria
-- The Settings dropdown in `base2.html` gains a working "Fake 2" option (alongside "Profile" and "Fake"), with correct `active` state highlighting.
-- Clicking "Fake 2" opens `fake_build_report2.html`, where a CSV can be uploaded, columns/operators/brackets/functions/aggregates can be dragged onto an open canvas as nodes, and nodes can be linked together with connection lines to form a formula.
-- The resulting node-graph formula(s) can be evaluated per row and saved, with per-row answers shown and exportable to CSV and PDF, matching `fake_build_report.html`'s output capabilities.
-- The existing `_user_can_access_object_client` permission check is enforced on the new `building_settings_fake2` view, consistent with other building-tab views.
-- No regressions in any existing pages, including the existing `fake_build_report.html`, Vault, Insight, Energy, Reports, Charts, and Settings/Profile.
-- `app.css` and all admin files are untouched (aside from any minor, additive, clearly-scoped CSS if genuinely unavoidable).
-- `building_dashboard.html` and the Settings/Profile edit-save function are left unchanged in this round.
+- All building-tab views (`vault_trend_logs`, `vault_objects`, the 5 insight views, `building_energy`, `building_reports`, and confirmed `building_settings_fake`/`fake2`) require login, enforce `_user_can_access_object_client`, and pass full sidebar context — matching Charts/Systems/Settings.
+- `settings_profile.html` renders valid HTML (no missing `<tr>`), every displayed value is bound to its correct model field (no hardcoded "Hong Kong", no mislabeled `pk`-as-code), and no sample building data remains in `default:` fallbacks.
+- `WEATHER_API_KEY` and `GOOGLE_MAPS_API_KEY` no longer appear as literals in `core/views.py`.
+- No regressions in `fake_build_report.html`, `fake_build_report2.html`, Buildings, Groups, Users, Clients, app-level Dashboard, Charts, or Systems.
+- `app.css`/`app2.css` structural rules and all admin files remain untouched.
