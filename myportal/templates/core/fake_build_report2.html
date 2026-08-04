@@ -1,0 +1,1606 @@
+{% extends "base2.html" %}
+{% load static %}
+
+{% block title %}Fake Report Builder 2 | {{ selected_building.name }}{% endblock %}
+{% block breadcrumb %}Buildings / {{ selected_building.name }} / Settings / Fake 2{% endblock %}
+{% block page_title %}{{ selected_building.name }} : Fake Report Builder 2 (Node Graph){% endblock %}
+
+{% block extra_css %}
+<style>
+    .frb-page {
+        display: grid;
+        grid-template-columns: 260px 1fr 340px;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .frb-left, .frb-mid, .frb-right {
+        background: #f7f7f7;
+        border: 1px solid #d9d9d9;
+        border-radius: 4px;
+        padding: 12px;
+    }
+
+    .frb-left h3, .frb-mid h3, .frb-right h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: #333;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .frb-left h4, .frb-mid h4, .frb-right h4 {
+        margin: 16px 0 8px;
+        font-size: 12px;
+        color: #777;
+        text-transform: uppercase;
+    }
+
+    .frb-plates {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .frb-plate {
+        background: #fff;
+        border: 1px solid #cfcfcf;
+        border-left: 4px solid #e87722;
+        border-radius: 3px;
+        padding: 8px 10px;
+        cursor: grab;
+        user-select: none;
+    }
+    .frb-plate:active { cursor: grabbing; }
+    .frb-plate-title { font-size: 13px; font-weight: 600; color: #333; }
+    .frb-plate-meta { font-size: 11px; color: #999; margin-top: 2px; }
+
+    .frb-upload-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        background: #e87722;
+        color: #fff;
+        border-radius: 3px;
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .frb-upload-label:hover { background: #d3690f; }
+
+    .frb-filename {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #888;
+        word-break: break-all;
+    }
+
+    /* ── Chip palettes (aggregates / functions) ── */
+    .frb-chip-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+    }
+    .frb-chip {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 10px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 3px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: grab;
+        user-select: none;
+        border: 1px solid transparent;
+    }
+    .frb-chip:active { cursor: grabbing; }
+    .frb-chip-func {
+        background: #f2ecfb;
+        border-left: 4px solid #7c4dbb;
+        color: #7c4dbb;
+    }
+    .frb-chip-agg {
+        background: #e9f1fb;
+        border-left: 4px solid #2f6fb0;
+        color: #2f6fb0;
+    }
+
+    .frb-hint {
+        font-size: 11px;
+        color: #999;
+        margin-top: 6px;
+        line-height: 1.5;
+    }
+
+    .frb-builder-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .frb-btn {
+        padding: 7px 14px;
+        border-radius: 3px;
+        font-size: 12px;
+        border: 1px solid #cfcfcf;
+        background: #fff;
+        color: #444;
+        cursor: pointer;
+    }
+    .frb-btn-primary {
+        background: #2c7a4b;
+        border-color: #2c7a4b;
+        color: #fff;
+    }
+    .frb-btn-primary:disabled {
+        background: #a9c9b3;
+        border-color: #a9c9b3;
+        cursor: not-allowed;
+    }
+    .frb-btn:hover:not(:disabled) { opacity: .9; }
+
+    .frb-error {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #b33;
+        background: #fdecea;
+        border: 1px solid #f5c2c0;
+        border-radius: 3px;
+        padding: 6px 10px;
+    }
+
+    /* ── Saved formulas (mid panel) ── */
+    .frb-saved-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .frb-formula-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        border: 1px solid #cfcfcf;
+        border-left: 4px solid #2c7a4b;
+        border-radius: 3px;
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+    .frb-formula-name { color: #333; font-weight: 600; word-break: break-word; }
+    .frb-formula-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .frb-formula-remove {
+        border: none;
+        background: none;
+        color: #b33;
+        font-size: 16px;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+
+    /* ── Right panel ── */
+    .frb-answer-card {
+        background: #fff;
+        border: 1px solid #cfcfcf;
+        border-radius: 3px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    .frb-answer-header {
+        background: #efefef;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #333;
+        border-bottom: 1px solid #d9d9d9;
+        word-break: break-word;
+    }
+    .frb-answer-rows {
+        max-height: 180px;
+        overflow-y: auto;
+    }
+    .frb-answer-row-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 10px;
+        font-size: 12px;
+        color: #444;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .frb-answer-row-item:last-child { border-bottom: none; }
+    .frb-answer-row-item span:first-child { color: #888; }
+    .frb-answer-row-item span:last-child { font-weight: 600; color: #2c7a4b; }
+
+    .frb-export-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+    }
+    .frb-export-btn {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 6px;
+        border: 1px solid #cfcfcf;
+        background: #fff;
+        border-radius: 3px;
+        font-size: 12px;
+        color: #444;
+        cursor: pointer;
+    }
+    .frb-export-btn:hover { background: #f0f0f0; }
+
+    .frb-print-only { display: none; }
+
+    @media print {
+        body * { visibility: hidden; }
+        #frbPrintArea, #frbPrintArea * { visibility: visible; }
+        #frbPrintArea {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: block !important;
+        }
+        #frbPrintArea table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+        #frbPrintArea th, #frbPrintArea td {
+            border: 1px solid #333;
+            padding: 6px 10px;
+            font-size: 12px;
+            text-align: left;
+        }
+    }
+
+    /* ── Node-graph canvas (mid panel) ── */
+    .frb2-canvas-wrap {
+        position: relative;
+        margin-top: 6px;
+    }
+    .frb2-canvas {
+        position: relative;
+        min-height: 440px;
+        border: 2px dashed #c7c7c7;
+        border-radius: 4px;
+        background: #fff;
+        overflow: hidden;
+    }
+    .frb2-canvas.frb2-canvas-hover {
+        border-color: #e87722;
+        background: #fff4ea;
+    }
+    .frb2-canvas-empty-hint {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 30px;
+        font-size: 13px;
+        color: #999;
+        font-style: italic;
+        pointer-events: none;
+    }
+
+    .frb2-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+    .frb2-edge-path {
+        fill: none;
+        stroke: #9aa0a6;
+        stroke-width: 2;
+    }
+    .frb2-edge-temp {
+        fill: none;
+        stroke: #2f6fb0;
+        stroke-width: 2;
+        stroke-dasharray: 5, 4;
+    }
+
+    .frb2-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    /* The "calculation tool" that sits in the middle of each connecting line */
+    .frb2-pill {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #fff;
+        border: 1px solid #2c7a4b;
+        color: #2c7a4b;
+        font-weight: 700;
+        font-size: 13px;
+        border-radius: 999px;
+        padding: 3px 9px;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,.15);
+        user-select: none;
+        pointer-events: auto;
+        white-space: nowrap;
+    }
+    .frb2-pill:hover { background: #eaf5ee; }
+    .frb2-pill-op { min-width: 10px; text-align: center; }
+    .frb2-pill-remove {
+        font-size: 11px;
+        color: #b33;
+        opacity: .65;
+    }
+    .frb2-pill-remove:hover { opacity: 1; }
+
+    .frb2-node {
+        position: absolute;
+        min-width: 148px;
+        max-width: 190px;
+        background: #fff;
+        border: 1px solid #cfcfcf;
+        border-left: 4px solid #e87722;
+        border-radius: 4px;
+        padding: 8px 16px 8px 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        cursor: move;
+        user-select: none;
+        pointer-events: auto;
+    }
+    .frb2-node-aggregate { border-left-color: #2f6fb0; }
+    .frb2-node-hover { outline: 2px dashed #7c4dbb; outline-offset: 1px; }
+
+    .frb2-node-remove {
+        position: absolute;
+        top: 1px;
+        right: 5px;
+        font-size: 13px;
+        line-height: 1;
+        color: #b33;
+        cursor: pointer;
+    }
+    .frb2-node-remove:hover { color: #7a1f1f; }
+
+    .frb2-node-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #333;
+        word-break: break-word;
+    }
+    .frb2-node-badge {
+        display: inline-block;
+        background: #7c4dbb;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 2px;
+        padding: 1px 5px;
+        margin-right: 4px;
+    }
+    .frb2-agg-placeholder {
+        font-style: italic;
+        color: #a7bdd4;
+        font-weight: 400;
+    }
+
+    .frb2-port {
+        position: absolute;
+        top: 50%;
+        width: 14px;
+        height: 14px;
+        margin-top: -7px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #2f6fb0;
+        cursor: crosshair;
+        pointer-events: auto;
+    }
+    .frb2-port-in { left: -8px; }
+    .frb2-port-out { right: -8px; }
+    .frb2-port:hover { background: #2f6fb0; }
+
+    .frb2-canvas-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    /* ── Bracket / group container (drag boxes inside to bundle them into one unit) ── */
+    .frb-chip-group {
+        background: #fff3e0;
+        border-left: 4px solid #d99a3d;
+        color: #b06a12;
+    }
+
+    .frb2-group {
+        position: absolute;
+        border: 2px dashed #d99a3d;
+        border-radius: 6px;
+        background: rgba(255, 244, 230, 0.55);
+        cursor: move;
+        padding: 22px 10px 10px;
+        box-sizing: border-box;
+        pointer-events: auto;
+    }
+    .frb2-group-header {
+        position: absolute;
+        top: 2px;
+        left: 8px;
+        right: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #b06a12;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .frb2-group-title { white-space: nowrap; }
+    .frb2-group-remove {
+        position: absolute;
+        top: 1px;
+        right: 5px;
+    }
+    .frb2-group-body {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        cursor: default;
+    }
+    .frb2-group-body-hint {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 10px;
+        font-size: 11px;
+        color: #c79b5c;
+        font-style: italic;
+        pointer-events: none;
+    }
+    .frb2-group-port { border-color: #d99a3d; z-index: 2; }
+    .frb2-group-port:hover { background: #d99a3d; }
+    .frb2-group-resize {
+        position: absolute;
+        right: 2px;
+        bottom: 2px;
+        width: 12px;
+        height: 12px;
+        cursor: nwse-resize;
+        border-right: 3px solid #d99a3d;
+        border-bottom: 3px solid #d99a3d;
+        opacity: .7;
+        pointer-events: auto;
+    }
+    .frb2-group-resize:hover { opacity: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="frb-page">
+
+    {# ── Left panel: CSV upload + column plates (same as Fake) ── #}
+    <div class="frb-left">
+        <h3>Data Source</h3>
+        <label for="csvFileInput" class="frb-upload-label">
+            <i class="fa-solid fa-upload"></i> Upload CSV
+        </label>
+        <input type="file" id="csvFileInput" accept=".csv" hidden>
+        <div id="csvFileName" class="frb-filename">No file selected</div>
+
+        <h4>Columns (drag onto the canvas →)</h4>
+        <div id="columnPlates" class="frb-plates">
+            <p style="font-size:12px;color:#999;">Upload a CSV to see column plates here.</p>
+        </div>
+    </div>
+
+    {# ── Mid panel: node-graph formula builder (drag boxes onto a canvas, connect them with lines) ── #}
+    <div class="frb-mid">
+        <h3>Report Builder (Node Graph)</h3>
+
+        <h4>Aggregates (drag onto the canvas to create a box)</h4>
+        <div class="frb-chip-row">
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="SUM">SUM</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="AVG">AVG</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="MIN">MIN</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="MAX">MAX</div>
+            <div class="frb-chip frb-chip-agg" draggable="true" data-kind="aggregate" data-agg="COUNT">COUNT</div>
+        </div>
+
+        <h4>Functions (drag onto an existing box to wrap it)</h4>
+        <div class="frb-chip-row">
+            <div class="frb-chip frb-chip-func" draggable="true" data-kind="function" data-func="ABS">ABS</div>
+            <div class="frb-chip frb-chip-func" draggable="true" data-kind="function" data-func="ROUND">ROUND</div>
+            <div class="frb-chip frb-chip-func" draggable="true" data-kind="function" data-func="SQRT">SQRT</div>
+        </div>
+
+        <h4>Grouping (drag onto the canvas to create a bracket)</h4>
+        <div class="frb-chip-row">
+            <div class="frb-chip frb-chip-group" draggable="true" data-kind="group">( &nbsp;)</div>
+        </div>
+
+        <h4>Canvas (drag boxes here, then connect them)</h4>
+        <div class="frb2-canvas-wrap">
+            <div id="frb2Canvas" class="frb2-canvas">
+                <svg id="frb2Svg" class="frb2-svg">
+                    <g id="frb2EdgesGroup"></g>
+                </svg>
+                <div id="frb2Overlay" class="frb2-overlay"></div>
+                <div id="frb2EmptyHint" class="frb2-canvas-empty-hint">
+                    Drag a column or an aggregate chip in here to create a box.<br>
+                    Then drag from a box's right-hand dot to another box's left-hand dot to connect them.<br>
+                    Drag the ( ) chip in here to create a bracket group.
+                </div>
+                <div id="frb2NodesLayer"></div>
+            </div>
+        </div>
+        <p class="frb-hint">
+            Each connecting line carries its own calculation tool right in the middle &mdash; click the
+            green circle on a line to cycle through + &minus; &times; &divide; ^ %, and click the small
+            &times; beside it to remove that connection. Click a box's &times; to delete it and its connections.
+            Drop ABS/ROUND/SQRT directly onto a box to wrap it; drop a column onto an aggregate box to fill it in.
+            Each box can have at most one line in and one line out, so the whole graph reads as one ordered
+            chain (evaluated left-to-right with no operator precedence).<br><br>
+            <strong>Brackets:</strong> drag the ( ) chip onto the canvas to create a dashed group, then drag
+            column/aggregate chips into it (or drag an existing box in or out to move it between the group and
+            the main canvas &mdash; this clears that box's connections). Connect boxes inside the group to form
+            its own inner chain; the group's own left/right dots then let you wire the whole bracketed result
+            into the outer chain, just like real parentheses. Drop a function chip on the group's dashed border
+            to wrap the whole group in ABS/ROUND/SQRT. Groups can't be nested inside another group.
+        </p>
+        <div class="frb2-canvas-actions">
+            <button type="button" id="clearChainBtn" class="frb-btn">Clear Canvas</button>
+            <button type="button" id="saveFormulaBtn" class="frb-btn frb-btn-primary" disabled>Save Formula</button>
+        </div>
+        <div id="formulaError" class="frb-error" style="display:none;"></div>
+
+        <h4>Saved Formulas</h4>
+        <div id="savedFormulas" class="frb-saved-list">
+            <p style="font-size:12px;color:#999;">No formulas saved yet.</p>
+        </div>
+
+    </div>
+
+    {# ── Right panel: per-row answers + export (same as Fake) ── #}
+    <div class="frb-right">
+        <h3>Answers</h3>
+        <div id="answersPanel">
+            <p style="font-size:12px;color:#999;">Save a formula to see row-by-row answers here.</p>
+        </div>
+
+        <div class="frb-export-row">
+            <button type="button" id="exportCsvBtn" class="frb-export-btn">
+                <i class="fa-solid fa-file-csv"></i> Export CSV
+            </button>
+            <button type="button" id="exportPdfBtn" class="frb-export-btn">
+                <i class="fa-solid fa-file-pdf"></i> Export PDF
+            </button>
+        </div>
+    </div>
+
+</div>
+
+{# Hidden print-only area, filled in just before window.print() is called #}
+<div id="frbPrintArea" class="frb-print-only"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // ── State ──
+    let columnsData = {};       // { "ColumnName": ["1", "2", ...] }
+    let rowLabels = [];         // per-row label (timestamp column values, or "Row 1", "Row 2"...)
+    let labelColumnName = null;
+
+    // Node-graph state.
+    //   node (column):    { id, type:'node', kind:'column', value:'ColA', wrapFunc:null|'ABS'|'ROUND'|'SQRT', groupId:null|'gN', x, y }
+    //   node (aggregate): { id, type:'node', kind:'aggregate', aggFunc:'SUM'|..., column:null|'ColA', wrapFunc:null|..., groupId, x, y }
+    //   group (bracket):  { id, type:'group', wrapFunc:null|'ABS'|'ROUND'|'SQRT', x, y, w, h }
+    //   edge:             { id, fromId, toId, operator:'+'|'-'|'*'|'/'|'^'|'%' }
+    // Each node/group may have at most one outgoing edge and at most one incoming edge WITHIN ITS OWN SCOPE
+    // (top-level entities connect to other top-level entities; a group's children only connect to each other),
+    // so each scope is always a single simple chain (or several disconnected boxes). A group's own left/right
+    // dots let the whole bracketed sub-chain be wired into the outer chain as one unit. Only one level of
+    // nesting is supported — a group cannot contain another group.
+    let nodes = [];
+    let groups = [];
+    let edges = [];
+    let nodeSeq = 0;
+    let groupSeq = 0;
+    let edgeSeq = 0;
+    let formulas = [];          // { id, name, values:[...] }  (values aligned with rowLabels)
+
+    let connecting = null;      // { fromId } while dragging a new connection out of a port
+
+    // ── Elements ──
+    const csvFileInput    = document.getElementById("csvFileInput");
+    const csvFileName     = document.getElementById("csvFileName");
+    const columnPlatesEl  = document.getElementById("columnPlates");
+
+    const canvasEl        = document.getElementById("frb2Canvas");
+    const svgEl            = document.getElementById("frb2Svg");
+    const edgesGroupEl     = document.getElementById("frb2EdgesGroup");
+    const overlayEl        = document.getElementById("frb2Overlay");
+    const nodesLayerEl     = document.getElementById("frb2NodesLayer");
+    const emptyHintEl      = document.getElementById("frb2EmptyHint");
+
+    const clearChainBtn     = document.getElementById("clearChainBtn");
+    const saveFormulaBtn    = document.getElementById("saveFormulaBtn");
+    const formulaError      = document.getElementById("formulaError");
+    const savedFormulasEl   = document.getElementById("savedFormulas");
+
+    const answersPanelEl    = document.getElementById("answersPanel");
+    const exportCsvBtn      = document.getElementById("exportCsvBtn");
+    const exportPdfBtn      = document.getElementById("exportPdfBtn");
+    const printArea         = document.getElementById("frbPrintArea");
+
+    const OPERATORS = ["+", "-", "*", "/", "^", "%"];
+
+    function showFormulaError(msg) {
+        formulaError.textContent = msg;
+        formulaError.style.display = "block";
+    }
+
+    // ── Minimal CSV parser (handles quoted fields, commas, CRLF/LF) ──
+    function parseCSV(text) {
+        const rows = [];
+        let row = [], field = "", inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (text[i + 1] === '"') { field += '"'; i++; }
+                    else { inQuotes = false; }
+                } else {
+                    field += c;
+                }
+            } else if (c === '"') {
+                inQuotes = true;
+            } else if (c === ",") {
+                row.push(field); field = "";
+            } else if (c === "\n" || c === "\r") {
+                if (c === "\r" && text[i + 1] === "\n") i++;
+                row.push(field); field = "";
+                if (row.some(v => v.trim() !== "")) rows.push(row);
+                row = [];
+            } else {
+                field += c;
+            }
+        }
+        if (field.length || row.length) { row.push(field); rows.push(row); }
+        return rows;
+    }
+
+    function isNumericColumn(values) {
+        return values.length > 0 && values.every(v => v === "" || !isNaN(parseFloat(v)));
+    }
+
+    function detectLabelColumn(headers) {
+        return headers.find(h => /time|date|stamp/i.test(h)) || null;
+    }
+
+    function loadCSV(text) {
+        const rows = parseCSV(text);
+        if (!rows.length) { alert("This CSV file appears to be empty."); return; }
+
+        const headers = rows[0].map(h => h.trim()).filter(h => h !== "");
+        if (!headers.length) { alert("No column headers found in the first row."); return; }
+
+        columnsData = {};
+        headers.forEach(h => { columnsData[h] = []; });
+
+        for (let i = 1; i < rows.length; i++) {
+            headers.forEach((h, idx) => {
+                const v = rows[i][idx] !== undefined ? rows[i][idx].trim() : "";
+                columnsData[h].push(v);
+            });
+        }
+
+        labelColumnName = detectLabelColumn(headers);
+        const rowCount = columnsData[headers[0]].length;
+        rowLabels = labelColumnName
+            ? columnsData[labelColumnName].slice()
+            : Array.from({ length: rowCount }, (_, i) => "Row " + (i + 1));
+
+        // Fresh file: reset everything on the canvas and all results.
+        nodes = [];
+        edges = [];
+        groups = [];
+        formulas = [];
+
+        renderPlates(headers);
+        renderGraph();
+        renderFormulas();
+        renderAnswers();
+    }
+
+    function renderPlates(headers) {
+        columnPlatesEl.innerHTML = "";
+        headers.forEach(h => {
+            const numeric = isNumericColumn(columnsData[h]);
+            const isLabelCol = h === labelColumnName;
+            const plate = document.createElement("div");
+            plate.className = "frb-plate";
+            plate.draggable = true;
+            plate.dataset.column = h;
+            plate.innerHTML =
+                '<div class="frb-plate-title">' + h + (isLabelCol ? " (row label)" : "") + "</div>" +
+                '<div class="frb-plate-meta">' + columnsData[h].length + " rows &middot; " +
+                (numeric ? "numeric" : "text") + "</div>";
+
+            plate.addEventListener("dragstart", function (e) {
+                e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "column", value: h }));
+                e.dataTransfer.effectAllowed = "copy";
+            });
+
+            columnPlatesEl.appendChild(plate);
+        });
+    }
+
+    // ── Chip palettes: aggregates / functions ──
+    document.querySelectorAll('.frb-chip[data-kind="function"]').forEach(chip => {
+        chip.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "function", value: chip.dataset.func }));
+            e.dataTransfer.effectAllowed = "copy";
+        });
+    });
+    document.querySelectorAll('.frb-chip[data-kind="aggregate"]').forEach(chip => {
+        chip.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "aggregate", value: chip.dataset.agg }));
+            e.dataTransfer.effectAllowed = "copy";
+        });
+    });
+    document.querySelectorAll('.frb-chip[data-kind="group"]').forEach(chip => {
+        chip.addEventListener("dragstart", function (e) {
+            e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "group" }));
+            e.dataTransfer.effectAllowed = "copy";
+        });
+    });
+
+    function opLabel(op) {
+        return { "+": "+", "-": "\u2212", "*": "\u00d7", "/": "\u00f7", "^": "^", "%": "%" }[op] || op;
+    }
+
+    function applyUnaryFunc(func, val) {
+        switch (func) {
+            case "ABS": return Math.abs(val);
+            case "ROUND": return Math.round(val);
+            case "SQRT": return val >= 0 ? Math.sqrt(val) : 0;
+            default: return val;
+        }
+    }
+
+    function applyBinaryOp(op, x, y) {
+        switch (op) {
+            case "+": return x + y;
+            case "-": return x - y;
+            case "*": return x * y;
+            case "/": return y !== 0 ? x / y : 0;
+            case "^": return Math.pow(x, y);
+            case "%": return y !== 0 ? x % y : 0;
+            default: return x;
+        }
+    }
+
+    function computeAggregate(col, func) {
+        const raw = columnsData[col] || [];
+        const nums = raw.filter(v => v !== "" && !isNaN(parseFloat(v))).map(v => parseFloat(v));
+
+        let value;
+        switch (func) {
+            case "SUM": value = nums.reduce((s, v) => s + v, 0); break;
+            case "AVG": value = nums.length ? nums.reduce((s, v) => s + v, 0) / nums.length : 0; break;
+            case "MIN": value = nums.length ? Math.min(...nums) : 0; break;
+            case "MAX": value = nums.length ? Math.max(...nums) : 0; break;
+            case "COUNT": value = raw.filter(v => v !== "").length; break;
+            default: value = 0;
+        }
+        return Math.round(value * 100) / 100;
+    }
+
+    // ── Node / group helpers ──
+    // "Entity" = either a leaf node (column/aggregate box) or a group (bracket). Both can sit in a chain
+    // and both can be wrapped in a unary function, so most of the evaluation logic is written generically
+    // against entities rather than against nodes specifically.
+    function findNode(id) { return nodes.find(n => n.id === id); }
+    function findEntity(id) { return nodes.find(n => n.id === id) || groups.find(g => g.id === id); }
+    function inDegree(id) { return edges.filter(e => e.toId === id).length; }
+    function outDegree(id) { return edges.filter(e => e.fromId === id).length; }
+    function isNodeComplete(node) {
+        if (node.kind === "column") return true;
+        if (node.kind === "aggregate") return !!node.column;
+        return false;
+    }
+
+    // A node/group's "scope" is what it's allowed to connect to: a group's own id for boxes living
+    // inside that group, or the sentinel "top" for groups themselves and for ungrouped top-level boxes.
+    function entityScope(id) {
+        if (groups.some(g => g.id === id)) return "top";
+        const node = findNode(id);
+        if (node) return node.groupId || "top";
+        return "top";
+    }
+
+    function isEntityComplete(entity) {
+        if (entity.type === "group") return !!getInnerChain(entity);
+        return isNodeComplete(entity);
+    }
+
+    function nodeToTerm(node) {
+        if (node.kind === "column") {
+            return { termType: "column", value: node.value, wrapFunc: node.wrapFunc };
+        }
+        return { termType: "aggregate", aggFunc: node.aggFunc, column: node.column, wrapFunc: node.wrapFunc };
+    }
+
+    // Generalizes nodeToTerm to also cover groups: a group's term wraps its own inner chain so it can be
+    // combined into the outer chain as a single bracketed unit, exactly like a parenthesized sub-expression.
+    function entityToTerm(entity) {
+        if (entity.type === "group") {
+            return { termType: "group", chain: getInnerChain(entity), wrapFunc: entity.wrapFunc };
+        }
+        return nodeToTerm(entity);
+    }
+
+    function computeTermValue(term, rowIdx) {
+        let val;
+        if (term.termType === "column") {
+            val = parseFloat(columnsData[term.value][rowIdx]) || 0;
+        } else if (term.termType === "aggregate") {
+            val = computeAggregate(term.column, term.aggFunc);
+        } else if (term.termType === "group") {
+            val = term.chain ? computeRowValueForChain(term.chain, rowIdx) : 0;
+        } else {
+            val = 0;
+        }
+        if (term.wrapFunc) val = applyUnaryFunc(term.wrapFunc, val);
+        return val;
+    }
+
+    function termDisplay(term) {
+        let base;
+        if (term.termType === "column") {
+            base = term.value;
+        } else if (term.termType === "aggregate") {
+            base = term.aggFunc + "(" + (term.column || "?") + ")";
+        } else if (term.termType === "group") {
+            base = "(" + (term.chain ? chainDisplayName(term.chain) : "...") + ")";
+        } else {
+            base = "?";
+        }
+        return term.wrapFunc ? (term.wrapFunc + "(" + base + ")") : base;
+    }
+
+    // Walks the single ordered chain formed by `entityList`, considering only edges whose both ends fall
+    // inside that same list (so a group's inner chain never sees the outer canvas's edges, and vice versa).
+    // Returns null if that scope isn't exactly one complete, connected, branch-free chain.
+    function chainFromEntities(entityList, edgeList) {
+        if (!entityList.length) return null;
+        if (!entityList.every(isEntityComplete)) return null;
+
+        const idSet = new Set(entityList.map(e => e.id));
+        const scopedEdges = edgeList.filter(e => idSet.has(e.fromId) && idSet.has(e.toId));
+        const outDeg = id => scopedEdges.filter(e => e.fromId === id).length;
+        const inDeg = id => scopedEdges.filter(e => e.toId === id).length;
+
+        if (!entityList.every(e => outDeg(e.id) <= 1 && inDeg(e.id) <= 1)) return null;
+
+        if (entityList.length === 1) {
+            return scopedEdges.length === 0 ? { nodes: [entityList[0]], ops: [] } : null;
+        }
+
+        if (scopedEdges.length !== entityList.length - 1) return null;
+
+        const starts = entityList.filter(e => inDeg(e.id) === 0);
+        const ends = entityList.filter(e => outDeg(e.id) === 0);
+        if (starts.length !== 1 || ends.length !== 1) return null;
+
+        const orderedNodes = [starts[0]];
+        const orderedOps = [];
+        const visited = new Set([starts[0].id]);
+        let cur = starts[0];
+        while (true) {
+            const edge = scopedEdges.find(e => e.fromId === cur.id);
+            if (!edge) break;
+            if (visited.has(edge.toId)) return null; // cycle guard
+            const next = entityList.find(e => e.id === edge.toId);
+            if (!next) return null;
+            orderedOps.push(edge.operator);
+            orderedNodes.push(next);
+            visited.add(next.id);
+            cur = next;
+        }
+
+        if (visited.size !== entityList.length) return null; // disconnected boxes in this scope
+        return { nodes: orderedNodes, ops: orderedOps };
+    }
+
+    // Top-level scope = every group (groups are always top-level; nesting isn't supported) plus every
+    // node that isn't inside a group.
+    function getTopLevelEntities() {
+        return [...nodes.filter(n => !n.groupId), ...groups];
+    }
+
+    function getOrderedChain() {
+        return chainFromEntities(getTopLevelEntities(), edges);
+    }
+
+    function getInnerChain(group) {
+        return chainFromEntities(nodes.filter(n => n.groupId === group.id), edges);
+    }
+
+    function computeRowValueForChain(chain, rowIdx) {
+        let acc = computeTermValue(entityToTerm(chain.nodes[0]), rowIdx);
+        for (let i = 0; i < chain.ops.length; i++) {
+            const nextVal = computeTermValue(entityToTerm(chain.nodes[i + 1]), rowIdx);
+            acc = applyBinaryOp(chain.ops[i], acc, nextVal);
+        }
+        return Math.round(acc * 100) / 100;
+    }
+
+    function chainDisplayName(chain) {
+        let out = termDisplay(entityToTerm(chain.nodes[0]));
+        for (let i = 0; i < chain.ops.length; i++) {
+            out += " " + opLabel(chain.ops[i]) + " " + termDisplay(entityToTerm(chain.nodes[i + 1]));
+        }
+        return out;
+    }
+
+    // ── Canvas: creating new nodes by dropping a column plate / aggregate chip ──
+    canvasEl.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        canvasEl.classList.add("frb2-canvas-hover");
+    });
+    canvasEl.addEventListener("dragleave", function () {
+        canvasEl.classList.remove("frb2-canvas-hover");
+    });
+    canvasEl.addEventListener("drop", function (e) {
+        e.preventDefault();
+        canvasEl.classList.remove("frb2-canvas-hover");
+        formulaError.style.display = "none";
+
+        let token;
+        try { token = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+        if (!token || !token.kind) return;
+
+        const rect = canvasEl.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        if (token.kind === "column") {
+            x = Math.max(6, Math.min(x, canvasEl.clientWidth - 160));
+            y = Math.max(6, Math.min(y, canvasEl.clientHeight - 50));
+            nodes.push({ id: "n" + (++nodeSeq), type: "node", kind: "column", value: token.value, wrapFunc: null, groupId: null, x, y });
+        } else if (token.kind === "aggregate") {
+            x = Math.max(6, Math.min(x, canvasEl.clientWidth - 160));
+            y = Math.max(6, Math.min(y, canvasEl.clientHeight - 50));
+            nodes.push({ id: "n" + (++nodeSeq), type: "node", kind: "aggregate", aggFunc: token.value, column: null, wrapFunc: null, groupId: null, x, y });
+        } else if (token.kind === "group") {
+            x = Math.max(6, Math.min(x, Math.max(6, canvasEl.clientWidth - 280)));
+            y = Math.max(6, Math.min(y, Math.max(6, canvasEl.clientHeight - 190)));
+            groups.push({ id: "g" + (++groupSeq), type: "group", wrapFunc: null, x, y, w: 280, h: 190 });
+        } else if (token.kind === "function") {
+            showFormulaError("Drop a function chip directly onto an existing box or group to wrap it \u2014 not onto empty canvas space.");
+            return;
+        } else {
+            return;
+        }
+        renderGraph();
+    });
+
+    // ── Connecting a new edge: drag from a box's output dot to another box ──
+    function startConnecting(fromId, e) {
+        if (outDegree(fromId) > 0) {
+            showFormulaError("That box already has an outgoing connection \u2014 remove it first.");
+            return;
+        }
+        formulaError.style.display = "none";
+        connecting = { fromId };
+        document.addEventListener("mousemove", onConnectingMove);
+        document.addEventListener("mouseup", onConnectingUp);
+        onConnectingMove(e);
+    }
+
+    function portCenter(portEl) {
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const r = portEl.getBoundingClientRect();
+        return { x: r.left + r.width / 2 - canvasRect.left, y: r.top + r.height / 2 - canvasRect.top };
+    }
+
+    function edgePathD(x1, y1, x2, y2) {
+        const dx = Math.max(Math.abs(x2 - x1) * 0.5, 40);
+        return "M " + x1 + " " + y1 + " C " + (x1 + dx) + " " + y1 + ", " + (x2 - dx) + " " + y2 + ", " + x2 + " " + y2;
+    }
+
+    function onConnectingMove(e) {
+        if (!connecting) return;
+        const fromPort = canvasEl.querySelector('[data-id="' + connecting.fromId + '"] > .frb2-port-out');
+        if (!fromPort) return;
+        const p1 = portCenter(fromPort);
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const p2 = { x: e.clientX - canvasRect.left, y: e.clientY - canvasRect.top };
+
+        let tempPath = document.getElementById("frb2TempPath");
+        if (!tempPath) {
+            tempPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            tempPath.setAttribute("id", "frb2TempPath");
+            tempPath.setAttribute("class", "frb2-edge-temp");
+            svgEl.appendChild(tempPath);
+        }
+        tempPath.setAttribute("d", edgePathD(p1.x, p1.y, p2.x, p2.y));
+    }
+
+    function wouldCreateCycle(fromId, toId) {
+        let cur = toId;
+        const guard = new Set();
+        while (cur) {
+            if (cur === fromId) return true;
+            if (guard.has(cur)) return true;
+            guard.add(cur);
+            const nextEdge = edges.find(e => e.fromId === cur);
+            cur = nextEdge ? nextEdge.toId : null;
+        }
+        return false;
+    }
+
+    function onConnectingUp(e) {
+        document.removeEventListener("mousemove", onConnectingMove);
+        document.removeEventListener("mouseup", onConnectingUp);
+
+        const tempPath = document.getElementById("frb2TempPath");
+        if (tempPath) tempPath.remove();
+
+        if (!connecting) return;
+        const fromId = connecting.fromId;
+        connecting = null;
+
+        const targetEl = e.target.closest(".frb2-node, .frb2-group");
+        if (!targetEl) { renderGraph(); return; }
+        const toId = targetEl.dataset.id;
+
+        if (toId === fromId) {
+            showFormulaError("A box can't connect to itself.");
+        } else if (entityScope(fromId) !== entityScope(toId)) {
+            showFormulaError("You can only connect boxes within the same group, or connect top-level boxes/groups to each other.");
+        } else if (outDegree(fromId) > 0) {
+            showFormulaError("That box already has an outgoing connection.");
+        } else if (inDegree(toId) > 0) {
+            showFormulaError("That box already has an incoming connection.");
+        } else if (wouldCreateCycle(fromId, toId)) {
+            showFormulaError("That connection would create a loop.");
+        } else {
+            edges.push({ id: "e" + (++edgeSeq), fromId, toId, operator: "+" });
+            formulaError.style.display = "none";
+        }
+        renderGraph();
+    }
+
+    // ── Node element construction ──
+    function nodeLabelHtml(node) {
+        const badge = node.wrapFunc ? '<span class="frb2-node-badge">' + node.wrapFunc + "</span>" : "";
+        if (node.kind === "column") {
+            return badge + node.value;
+        }
+        const inner = node.column ? node.column : '<span class="frb2-agg-placeholder">drop column</span>';
+        return badge + node.aggFunc + "(" + inner + ")";
+    }
+
+    function buildNodeEl(node, containerEl) {
+        const el = document.createElement("div");
+        el.className = "frb2-node" + (node.kind === "aggregate" ? " frb2-node-aggregate" : "");
+        el.dataset.id = node.id;
+        el.style.left = node.x + "px";
+        el.style.top = node.y + "px";
+
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "frb2-node-remove";
+        removeBtn.innerHTML = "&times;";
+        removeBtn.title = "Remove this box and its connections";
+        removeBtn.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+        removeBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            nodes = nodes.filter(n => n.id !== node.id);
+            edges = edges.filter(e2 => e2.fromId !== node.id && e2.toId !== node.id);
+            renderGraph();
+        });
+        el.appendChild(removeBtn);
+
+        const portIn = document.createElement("div");
+        portIn.className = "frb2-port frb2-port-in";
+        portIn.title = "Connection target";
+        el.appendChild(portIn);
+
+        const label = document.createElement("div");
+        label.className = "frb2-node-label";
+        label.innerHTML = nodeLabelHtml(node);
+        el.appendChild(label);
+
+        const portOut = document.createElement("div");
+        portOut.className = "frb2-port frb2-port-out";
+        portOut.title = "Drag from here to another box to connect them";
+        portOut.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            startConnecting(node.id, e);
+        });
+        el.appendChild(portOut);
+
+        // Reposition by dragging the box body (not the ports or the remove button).
+        el.addEventListener("mousedown", function (e) {
+            if (e.target === portOut || e.target === portIn || e.target === removeBtn) return;
+            e.preventDefault();
+            e.stopPropagation(); // don't let a parent group start moving itself while we drag one of its children
+            const startX = e.clientX, startY = e.clientY;
+            const origX = node.x, origY = node.y;
+            const bounds = containerEl || canvasEl;
+
+            function onMove(e2) {
+                const maxX = bounds.clientWidth - el.offsetWidth - 4;
+                const maxY = bounds.clientHeight - el.offsetHeight - 4;
+                node.x = Math.max(4, Math.min(origX + (e2.clientX - startX), Math.max(4, maxX)));
+                node.y = Math.max(4, Math.min(origY + (e2.clientY - startY), Math.max(4, maxY)));
+                el.style.left = node.x + "px";
+                el.style.top = node.y + "px";
+                renderEdges();
+            }
+            function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+                maybeReparentNode(node, el);
+            }
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
+
+        // Dropping a function chip here wraps this box; dropping a column here fills an aggregate's argument.
+        el.addEventListener("dragover", function (e) { e.preventDefault(); e.stopPropagation(); el.classList.add("frb2-node-hover"); });
+        el.addEventListener("dragleave", function (e) { e.stopPropagation(); el.classList.remove("frb2-node-hover"); });
+        el.addEventListener("drop", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            el.classList.remove("frb2-node-hover");
+            let token;
+            try { token = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+            if (!token) return;
+            formulaError.style.display = "none";
+            if (token.kind === "function") {
+                node.wrapFunc = token.value;
+                renderGraph();
+            } else if (token.kind === "column" && node.kind === "aggregate" && !node.column) {
+                node.column = token.value;
+                renderGraph();
+            } else if (token.kind === "column" && node.kind === "aggregate" && node.column) {
+                showFormulaError("This aggregate already has a column \u2014 remove the box and start again to change it.");
+            }
+        });
+
+        return el;
+    }
+
+    // After a node drag ends, check whether its center now overlaps a group's dashed body — if so (or if it
+    // was dragged back out of one), reparent it into that scope. Changing scope always clears the node's
+    // connections, since a box's valid connection partners depend entirely on which chain it belongs to.
+    function maybeReparentNode(node, el) {
+        const nodeRect = el.getBoundingClientRect();
+        const cx = nodeRect.left + nodeRect.width / 2;
+        const cy = nodeRect.top + nodeRect.height / 2;
+
+        let newGroupId = null;
+        for (const group of groups) {
+            const bodyEl = canvasEl.querySelector('.frb2-group[data-id="' + group.id + '"] .frb2-group-body');
+            if (!bodyEl) continue;
+            const bodyRect = bodyEl.getBoundingClientRect();
+            if (cx >= bodyRect.left && cx <= bodyRect.right && cy >= bodyRect.top && cy <= bodyRect.bottom) {
+                newGroupId = group.id;
+                break;
+            }
+        }
+
+        const oldGroupId = node.groupId || null;
+        if (newGroupId === oldGroupId) return; // still in the same scope, nothing to do
+
+        edges = edges.filter(e => e.fromId !== node.id && e.toId !== node.id);
+
+        const newContainerRect = newGroupId
+            ? canvasEl.querySelector('.frb2-group[data-id="' + newGroupId + '"] .frb2-group-body').getBoundingClientRect()
+            : canvasEl.getBoundingClientRect();
+
+        node.groupId = newGroupId;
+        node.x = Math.max(4, Math.min(cx - newContainerRect.left - nodeRect.width / 2, Math.max(4, newContainerRect.width - nodeRect.width - 4)));
+        node.y = Math.max(4, Math.min(cy - newContainerRect.top - nodeRect.height / 2, Math.max(4, newContainerRect.height - nodeRect.height - 4)));
+
+        renderGraph();
+    }
+
+    // ── Group (bracket) element construction ──
+    function buildGroupEl(group) {
+        const el = document.createElement("div");
+        el.className = "frb2-group";
+        el.dataset.id = group.id;
+        el.style.left = group.x + "px";
+        el.style.top = group.y + "px";
+        el.style.width = group.w + "px";
+        el.style.height = group.h + "px";
+
+        const header = document.createElement("div");
+        header.className = "frb2-group-header";
+        const title = document.createElement("span");
+        title.className = "frb2-group-title";
+        title.textContent = group.wrapFunc ? group.wrapFunc + "( \u2026 )" : "( \u2026 )";
+        header.appendChild(title);
+        el.appendChild(header);
+
+        const removeBtn = document.createElement("span");
+        removeBtn.className = "frb2-group-remove";
+        removeBtn.innerHTML = "&times;";
+        removeBtn.title = "Remove this group and the boxes inside it";
+        removeBtn.addEventListener("mousedown", function (e) { e.stopPropagation(); });
+        removeBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            const innerIds = nodes.filter(n => n.groupId === group.id).map(n => n.id);
+            nodes = nodes.filter(n => n.groupId !== group.id);
+            groups = groups.filter(g => g.id !== group.id);
+            edges = edges.filter(e2 => !innerIds.includes(e2.fromId) && !innerIds.includes(e2.toId)
+                && e2.fromId !== group.id && e2.toId !== group.id);
+            renderGraph();
+        });
+        el.appendChild(removeBtn);
+
+        const portIn = document.createElement("div");
+        portIn.className = "frb2-port frb2-port-in frb2-group-port";
+        portIn.title = "Connection target";
+        el.appendChild(portIn);
+
+        const body = document.createElement("div");
+        body.className = "frb2-group-body";
+        el.appendChild(body);
+
+        const bodyHint = document.createElement("div");
+        bodyHint.className = "frb2-group-body-hint";
+        bodyHint.textContent = "Drag column / aggregate boxes in here, then connect them to form the bracketed formula.";
+        body.appendChild(bodyHint);
+
+        const portOut = document.createElement("div");
+        portOut.className = "frb2-port frb2-port-out frb2-group-port";
+        portOut.title = "Drag from here to another box/group to connect them";
+        portOut.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            startConnecting(group.id, e);
+        });
+        el.appendChild(portOut);
+
+        const resizeHandle = document.createElement("div");
+        resizeHandle.className = "frb2-group-resize";
+        resizeHandle.title = "Drag to resize this group";
+        resizeHandle.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const startX = e.clientX, startY = e.clientY;
+            const origW = group.w, origH = group.h;
+
+            function onMove(e2) {
+                const maxW = canvasEl.clientWidth - group.x - 4;
+                const maxH = canvasEl.clientHeight - group.y - 4;
+                group.w = Math.max(180, Math.min(origW + (e2.clientX - startX), Math.max(180, maxW)));
+                group.h = Math.max(110, Math.min(origH + (e2.clientY - startY), Math.max(110, maxH)));
+                el.style.width = group.w + "px";
+                el.style.height = group.h + "px";
+                renderEdges();
+            }
+            function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+            }
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
+        el.appendChild(resizeHandle);
+
+        // Drag-to-move the whole group. Clicks on ports/remove/resize, or on one of the group's own child
+        // boxes, are excluded (child boxes call stopPropagation() on their own mousedown so this never fires
+        // for them anyway — the .closest() check here is just an extra safety net).
+        el.addEventListener("mousedown", function (e) {
+            if (e.target === portOut || e.target === portIn || e.target === removeBtn || e.target === resizeHandle) return;
+            if (e.target.closest(".frb2-node")) return;
+            e.preventDefault();
+            const startX = e.clientX, startY = e.clientY;
+            const origX = group.x, origY = group.y;
+
+            function onMove(e2) {
+                const maxX = canvasEl.clientWidth - el.offsetWidth - 4;
+                const maxY = canvasEl.clientHeight - el.offsetHeight - 4;
+                group.x = Math.max(4, Math.min(origX + (e2.clientX - startX), Math.max(4, maxX)));
+                group.y = Math.max(4, Math.min(origY + (e2.clientY - startY), Math.max(4, maxY)));
+                el.style.left = group.x + "px";
+                el.style.top = group.y + "px";
+                renderEdges();
+            }
+            function onUp() {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+            }
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
+
+        // Dropping a function chip anywhere on the group wraps the whole bracketed group; dropping a
+        // column/aggregate chip creates a new box inside it; nested groups are rejected.
+        el.addEventListener("dragover", function (e) { e.preventDefault(); e.stopPropagation(); el.classList.add("frb2-node-hover"); });
+        el.addEventListener("dragleave", function (e) { e.stopPropagation(); el.classList.remove("frb2-node-hover"); });
+        el.addEventListener("drop", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            el.classList.remove("frb2-node-hover");
+            let token;
+            try { token = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { return; }
+            if (!token || !token.kind) return;
+            formulaError.style.display = "none";
+
+            if (token.kind === "function") {
+                group.wrapFunc = token.value;
+                renderGraph();
+            } else if (token.kind === "group") {
+                showFormulaError("Groups can't be nested inside another group.");
+            } else if (token.kind === "column" || token.kind === "aggregate") {
+                const bodyRect = body.getBoundingClientRect();
+                let x = e.clientX - bodyRect.left;
+                let y = e.clientY - bodyRect.top;
+                x = Math.max(6, Math.min(x, Math.max(6, body.clientWidth - 160)));
+                y = Math.max(6, Math.min(y, Math.max(6, body.clientHeight - 50)));
+                if (token.kind === "column") {
+                    nodes.push({ id: "n" + (++nodeSeq), type: "node", kind: "column", value: token.value, wrapFunc: null, groupId: group.id, x, y });
+                } else {
+                    nodes.push({ id: "n" + (++nodeSeq), type: "node", kind: "aggregate", aggFunc: token.value, column: null, wrapFunc: null, groupId: group.id, x, y });
+                }
+                renderGraph();
+            }
+        });
+
+        return el;
+    }
+
+    // ── Rendering ──
+    function renderEdges() {
+        edgesGroupEl.innerHTML = "";
+        overlayEl.innerHTML = "";
+
+        edges.forEach(edge => {
+            const fromPort = canvasEl.querySelector('[data-id="' + edge.fromId + '"] > .frb2-port-out');
+            const toPort = canvasEl.querySelector('[data-id="' + edge.toId + '"] > .frb2-port-in');
+            if (!fromPort || !toPort) return;
+
+            const p1 = portCenter(fromPort);
+            const p2 = portCenter(toPort);
+
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("class", "frb2-edge-path");
+            path.setAttribute("d", edgePathD(p1.x, p1.y, p2.x, p2.y));
+            edgesGroupEl.appendChild(path);
+
+            // The "calculation tool" docked at the midpoint of the connecting line.
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+
+            const pill = document.createElement("div");
+            pill.className = "frb2-pill";
+            pill.style.left = midX + "px";
+            pill.style.top = midY + "px";
+
+            const opSpan = document.createElement("span");
+            opSpan.className = "frb2-pill-op";
+            opSpan.textContent = opLabel(edge.operator);
+            opSpan.title = "Click to change the operator";
+            opSpan.addEventListener("click", function (e) {
+                e.stopPropagation();
+                const idx = OPERATORS.indexOf(edge.operator);
+                edge.operator = OPERATORS[(idx + 1) % OPERATORS.length];
+                renderEdges();
+                updateSaveState();
+            });
+            pill.appendChild(opSpan);
+
+            const removeSpan = document.createElement("span");
+            removeSpan.className = "frb2-pill-remove";
+            removeSpan.innerHTML = "&times;";
+            removeSpan.title = "Remove this connection";
+            removeSpan.addEventListener("click", function (e) {
+                e.stopPropagation();
+                edges = edges.filter(e2 => e2.id !== edge.id);
+                renderGraph();
+            });
+            pill.appendChild(removeSpan);
+
+            overlayEl.appendChild(pill);
+        });
+    }
+
+    function updateSaveState() {
+        saveFormulaBtn.disabled = !getOrderedChain();
+    }
+
+    function renderGraph() {
+        nodesLayerEl.innerHTML = "";
+
+        groups.forEach(group => {
+            const groupEl = buildGroupEl(group);
+            nodesLayerEl.appendChild(groupEl);
+            const bodyEl = groupEl.querySelector(".frb2-group-body");
+            const bodyHintEl = groupEl.querySelector(".frb2-group-body-hint");
+            const children = nodes.filter(n => n.groupId === group.id);
+            children.forEach(node => bodyEl.appendChild(buildNodeEl(node, bodyEl)));
+            if (bodyHintEl) bodyHintEl.style.display = children.length ? "none" : "flex";
+        });
+
+        nodes.filter(n => !n.groupId).forEach(node => nodesLayerEl.appendChild(buildNodeEl(node, canvasEl)));
+
+        emptyHintEl.style.display = (nodes.length === 0 && groups.length === 0) ? "flex" : "none";
+        renderEdges();
+        updateSaveState();
+    }
+
+    clearChainBtn.addEventListener("click", function () {
+        nodes = [];
+        edges = [];
+        groups = [];
+        formulaError.style.display = "none";
+        renderGraph();
+    });
+
+    saveFormulaBtn.addEventListener("click", function () {
+        if (saveFormulaBtn.disabled) return;
+        const chain = getOrderedChain();
+        if (!chain) return;
+
+        const name = chainDisplayName(chain);
+        const values = rowLabels.map((_, i) => computeRowValueForChain(chain, i));
+
+        formulas.push({ id: Date.now(), name: name, values: values });
+        nodes = [];
+        edges = [];
+        groups = [];
+        formulaError.style.display = "none";
+        renderGraph();
+        renderFormulas();
+        renderAnswers();
+    });
+
+    function renderFormulas() {
+        savedFormulasEl.innerHTML = "";
+        if (!formulas.length) {
+            savedFormulasEl.innerHTML = '<p style="font-size:12px;color:#999;">No formulas saved yet.</p>';
+            return;
+        }
+        formulas.forEach(f => {
+            const card = document.createElement("div");
+            card.className = "frb-formula-card";
+            card.innerHTML =
+                '<div><div class="frb-formula-name">' + f.name + '</div>' +
+                '<div class="frb-formula-meta">' + f.values.length + ' rows computed</div></div>' +
+                '<button type="button" class="frb-formula-remove" data-id="' + f.id + '" aria-label="Remove">&times;</button>';
+            savedFormulasEl.appendChild(card);
+        });
+        savedFormulasEl.querySelectorAll(".frb-formula-remove").forEach(btn => {
+            btn.addEventListener("click", function () {
+                formulas = formulas.filter(f => String(f.id) !== btn.dataset.id);
+                renderFormulas();
+                renderAnswers();
+            });
+        });
+    }
+
+    function renderAnswers() {
+        answersPanelEl.innerHTML = "";
+        if (!formulas.length) {
+            answersPanelEl.innerHTML = '<p style="font-size:12px;color:#999;">Save a formula to see row-by-row answers here.</p>';
+            return;
+        }
+        formulas.forEach(f => {
+            const card = document.createElement("div");
+            card.className = "frb-answer-card";
+
+            const header = document.createElement("div");
+            header.className = "frb-answer-header";
+            header.textContent = f.name + (labelColumnName ? " (by " + labelColumnName + ")" : "");
+            card.appendChild(header);
+
+            const rowsWrap = document.createElement("div");
+            rowsWrap.className = "frb-answer-rows";
+            rowLabels.forEach((label, i) => {
+                const item = document.createElement("div");
+                item.className = "frb-answer-row-item";
+                item.innerHTML = "<span>" + label + "</span><span>" + f.values[i] + "</span>";
+                rowsWrap.appendChild(item);
+            });
+            card.appendChild(rowsWrap);
+
+            answersPanelEl.appendChild(card);
+        });
+    }
+
+    // ── CSV file upload ──
+    csvFileInput.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        csvFileName.textContent = file.name;
+
+        const reader = new FileReader();
+        reader.onload = function (ev) { loadCSV(ev.target.result); };
+        reader.onerror = function () { alert("Could not read that file."); };
+        reader.readAsText(file);
+    });
+
+    // ── Export to CSV: per-row answers table ──
+    exportCsvBtn.addEventListener("click", function () {
+        if (!formulas.length) {
+            alert("Save at least one formula first.");
+            return;
+        }
+
+        let csv = "";
+        const labelHeader = labelColumnName || "Row";
+        csv += '"' + labelHeader + '"';
+        formulas.forEach(f => { csv += ',"' + f.name.replace(/"/g, '""') + '"'; });
+        csv += "\n";
+        rowLabels.forEach((label, i) => {
+            csv += '"' + String(label).replace(/"/g, '""') + '"';
+            formulas.forEach(f => { csv += "," + f.values[i]; });
+            csv += "\n";
+        });
+
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "fake_build_report2_results.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    });
+
+    // ── Export to PDF (browser print → "Save as PDF") ──
+    exportPdfBtn.addEventListener("click", function () {
+        if (!formulas.length) {
+            alert("Save at least one formula first.");
+            return;
+        }
+
+        const labelHeader = labelColumnName || "Row";
+        let html = "<h2>Fake Build Report 2 \u2014 Results</h2>";
+        html += "<h3>Answers</h3><table><tr><th>" + labelHeader + "</th>";
+        formulas.forEach(f => { html += "<th>" + f.name + "</th>"; });
+        html += "</tr>";
+        rowLabels.forEach((label, i) => {
+            html += "<tr><td>" + label + "</td>";
+            formulas.forEach(f => { html += "<td>" + f.values[i] + "</td>"; });
+            html += "</tr>";
+        });
+        html += "</table>";
+
+        printArea.innerHTML = html;
+        window.print();
+    });
+
+    renderGraph();
+});
+</script>
+{% endblock %}

@@ -65,6 +65,7 @@ urlpatterns = [
     # ── Settings ──
     path("buildings/<int:pk>/settings/profile/", views.building_settings_profile, name="building_settings_profile"),
     path("buildings/<int:pk>/settings/fake/", views.building_settings_fake, name="building_settings_fake"),
+    path("buildings/<int:pk>/settings/fake2/", views.building_settings_fake2, name="building_settings_fake2"),
 ]
 
 
